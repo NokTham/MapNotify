@@ -1,4 +1,4 @@
-﻿using ExileCore;
+using ExileCore;
 using ExileCore.PoEMemory.Components;
 using ExileCore.PoEMemory.Elements.InventoryElements;
 using ExileCore.Shared.Nodes;
@@ -38,7 +38,11 @@ namespace MapNotify
         public static nuVector4 ColorButton(string labelString, nuVector4 setting)
         {
             var refValue = setting;
-            ImGui.ColorEdit4(labelString, ref refValue, ImGuiColorEditFlags.AlphaPreviewHalf | ImGuiColorEditFlags.AlphaBar);
+            ImGui.ColorEdit4(
+                labelString,
+                ref refValue,
+                ImGuiColorEditFlags.AlphaPreviewHalf | ImGuiColorEditFlags.AlphaBar
+            );
             return refValue;
         }
 
@@ -48,7 +52,13 @@ namespace MapNotify
             return boolValue;
         }
 
-        private string[] excludedFiles = new string[] { "HeistWarnings.txt", "ModWarnings.txt", "SextantWarnings.txt", "WatchstoneWarnings.txt" };
+        private string[] excludedFiles = new string[]
+        {
+            "HeistWarnings.txt",
+            "ModWarnings.txt",
+            "SextantWarnings.txt",
+            "WatchstoneWarnings.txt"
+        };
 
         public string SelectFile()
         {
@@ -74,7 +84,9 @@ namespace MapNotify
                     // If the value has changed, invoke the OnValueSelected action
                     if (previousValue != Settings.BadModWarningsLoader.Value)
                     {
-                        Settings.BadModWarningsLoader.OnValueSelected(Settings.BadModWarningsLoader.Value);
+                        Settings.BadModWarningsLoader.OnValueSelected(
+                            Settings.BadModWarningsLoader.Value
+                        );
 
                         // Update the BadModsDictionary
                         BadModsDictionary = LoadConfigBadMod();
@@ -89,16 +101,19 @@ namespace MapNotify
         public static void DebugHover()
         {
             var uiHover = ingameState.UIHover ?? null;
-            if (uiHover == null || !uiHover.IsVisible) return;
+            if (uiHover == null || !uiHover.IsVisible)
+                return;
             var inventoryItemIcon = uiHover?.AsObject<NormalInventoryItem>() ?? null;
-            if (inventoryItemIcon == null) return;
+            if (inventoryItemIcon == null)
+                return;
             var tooltip = inventoryItemIcon?.Tooltip ?? null;
             var entity = inventoryItemIcon?.Item ?? null;
             if (tooltip != null && entity.Address != 0 && entity.IsValid)
             {
                 var modsComponent = entity.GetComponent<Mods>() ?? null;
-                if (modsComponent == null) hoverMods.Clear();
-                else if (modsComponent != null && modsComponent.ItemMods.Count() > 0) 
+                if (modsComponent == null)
+                    hoverMods.Clear();
+                else if (modsComponent != null && modsComponent.ItemMods.Count() > 0)
                 {
                     hoverMods.Clear();
                     var itemMods = modsComponent?.ItemMods ?? null;
@@ -109,11 +124,18 @@ namespace MapNotify
                     }
                     foreach (var mod in itemMods)
                     {
-                        if (!hoverMods.Contains($"{mod.RawName} : {mod.Value1}, {mod.Value2}, {mod.Value3}, {mod.Value4}")) 
-                            hoverMods.Add($"{mod.RawName} : {mod.Value1}, {mod.Value2}, {mod.Value3}, {mod.Value4}");
+                        if (
+                            !hoverMods.Contains(
+                                $"{mod.RawName} : {mod.Value1}, {mod.Value2}, {mod.Value3}, {mod.Value4}"
+                            )
+                        )
+                            hoverMods.Add(
+                                $"{mod.RawName} : {mod.Value1}, {mod.Value2}, {mod.Value3}, {mod.Value4}"
+                            );
                     }
                 }
-            } else
+            }
+            else
             {
                 hoverMods.Clear();
             }
@@ -121,125 +143,321 @@ namespace MapNotify
 
         public override void DrawSettings()
         {
-            ImGui.Text("Plugin by Lachrymatory. -- Edited by Xcesius https://github.com/Xcesius/MapNotify/");
+            ImGui.Text(
+                "Plugin by Lachrymatory. -- Edited by Xcesius https://github.com/Xcesius/MapNotify/"
+            );
             ImGui.Text("Please give suggestions, report issues, etc. below:");
-            if (ImGui.Button("Xcesius's GitHub")) 
+            if (ImGui.Button("Xcesius's GitHub"))
                 System.Diagnostics.Process.Start("https://github.com/Xcesius/MapNotify/");
             ImGui.Separator();
 
-
             if (ImGui.TreeNodeEx("Core Settings", ImGuiTreeNodeFlags.CollapsingHeader))
             {
-                Settings.InventoryCacheInterval.Value = IntSlider("Inventory Item Caching Interval in ms", Settings.InventoryCacheInterval);
-                ImGui.SameLine(); HelpMarker("This setting is only applied once upon Initialization\nReload the plugin to use the updated setting");
-                Settings.StashCacheInterval.Value = IntSlider("Stash Item Caching Interval in ms", Settings.StashCacheInterval);
-                ImGui.SameLine(); HelpMarker("This setting is only applied once upon Initialization\nReload the plugin to use the updated setting");
-                Settings.AlwaysShowTooltip.Value = Checkbox("Show Tooltip Even Without Warnings", Settings.AlwaysShowTooltip);
-                ImGui.SameLine(); HelpMarker("This will show a tooltip even if there are no mods to warn you about on the map.\nThis means you will always be able to see tier, completion, quantity, mod count, etc.");
-                Settings.HorizontalLines.Value = Checkbox("Show Horizontal Lines", Settings.HorizontalLines);
-                ImGui.SameLine(); HelpMarker("Add a Horizontal Line above actual mod information.");
-                Settings.ShowForZanaMaps.Value = Checkbox("Display for Zana Missions", Settings.ShowForZanaMaps);
-                Settings.ShowLineForZanaMaps.Value = Checkbox("Display Horizontal Line in Zana Missions Info", Settings.ShowLineForZanaMaps);
-                Settings.ShowForWatchstones.Value = Checkbox("Display for Watchstones", Settings.ShowForWatchstones);
-                Settings.ShowForHeist.Value = Checkbox("Display for Contracts and Blueprints", Settings.ShowForHeist);
-                Settings.ShowForInvitations.Value = Checkbox("Display for Maven Invitations", Settings.ShowForInvitations);
-                Settings.AlwaysShowCompletionBorder.Value = Checkbox("Style tooltip border on incomplete maps", Settings.AlwaysShowCompletionBorder);
-                Settings.BoxForBricked.Value = Checkbox("Border on bricked maps in inventory", Settings.BoxForBricked);
-                Settings.BoxForMapWarnings.Value = Checkbox("Border on Map Mod Warnings in inventory and Stash", Settings.BoxForMapWarnings);
-                Settings.BoxForMapBadWarnings.Value = Checkbox("Border on Bad Map Mods in inventory and Stash", Settings.BoxForMapBadWarnings);
+                Settings.InventoryCacheInterval.Value = IntSlider(
+                    "Inventory Item Caching Interval in ms",
+                    Settings.InventoryCacheInterval
+                );
+                ImGui.SameLine();
+                HelpMarker(
+                    "This setting is only applied once upon Initialization\nReload the plugin to use the updated setting"
+                );
+                Settings.StashCacheInterval.Value = IntSlider(
+                    "Stash Item Caching Interval in ms",
+                    Settings.StashCacheInterval
+                );
+                ImGui.SameLine();
+                HelpMarker(
+                    "This setting is only applied once upon Initialization\nReload the plugin to use the updated setting"
+                );
+                Settings.AlwaysShowTooltip.Value = Checkbox(
+                    "Show Tooltip Even Without Warnings",
+                    Settings.AlwaysShowTooltip
+                );
+                ImGui.SameLine();
+                HelpMarker(
+                    "This will show a tooltip even if there are no mods to warn you about on the map.\nThis means you will always be able to see tier, completion, quantity, mod count, etc."
+                );
+                Settings.HorizontalLines.Value = Checkbox(
+                    "Show Horizontal Lines",
+                    Settings.HorizontalLines
+                );
+                ImGui.SameLine();
+                HelpMarker("Add a Horizontal Line above actual mod information.");
+                Settings.ShowForZanaMaps.Value = Checkbox(
+                    "Display for Zana Missions",
+                    Settings.ShowForZanaMaps
+                );
+                Settings.ShowLineForZanaMaps.Value = Checkbox(
+                    "Display Horizontal Line in Zana Missions Info",
+                    Settings.ShowLineForZanaMaps
+                );
+                Settings.ShowForWatchstones.Value = Checkbox(
+                    "Display for Watchstones",
+                    Settings.ShowForWatchstones
+                );
+                Settings.ShowForHeist.Value = Checkbox(
+                    "Display for Contracts and Blueprints",
+                    Settings.ShowForHeist
+                );
+                Settings.ShowForInvitations.Value = Checkbox(
+                    "Display for Maven Invitations",
+                    Settings.ShowForInvitations
+                );
+                Settings.AlwaysShowCompletionBorder.Value = Checkbox(
+                    "Style tooltip border on incomplete maps",
+                    Settings.AlwaysShowCompletionBorder
+                );
+                Settings.BoxForBricked.Value = Checkbox(
+                    "Border on bricked maps in inventory",
+                    Settings.BoxForBricked
+                );
+                Settings.BoxForMapWarnings.Value = Checkbox(
+                    "Border on Map Mod Warnings in inventory and Stash",
+                    Settings.BoxForMapWarnings
+                );
+                Settings.BoxForMapBadWarnings.Value = Checkbox(
+                    "Border on Bad Map Mods in inventory and Stash",
+                    Settings.BoxForMapBadWarnings
+                );
                 SelectFile();
                 ImGui.Text($"Bad Mod Warnings File: {Settings.BadModWarningsLoader.Value}");
-               // ImGui.SameLine(); HelpMarker("Add ';true' after a line in the config files to mark it as a bricked mod.");
+                // ImGui.SameLine(); HelpMarker("Add ';true' after a line in the config files to mark it as a bricked mod.");
 
             }
 
             if (ImGui.TreeNodeEx("Map Tooltip Settings", ImGuiTreeNodeFlags.CollapsingHeader))
             {
                 Settings.ShowMapName.Value = Checkbox("Show Map Name", Settings.ShowMapName);
-                Settings.ShowCompletion.Value = Checkbox("Show Completion Status", Settings.ShowCompletion);
-                if (Settings.ShowCompletion) Settings.ShowMapName.Value = true;
-                ImGui.SameLine(); HelpMarker("Requires map names.\nDisplays a red letter for each missing completion.\nA for Awakened Completion\nB for Bonus Completion\nC for Completion.");
+                Settings.ShowCompletion.Value = Checkbox(
+                    "Show Completion Status",
+                    Settings.ShowCompletion
+                );
+                if (Settings.ShowCompletion)
+                    Settings.ShowMapName.Value = true;
+                ImGui.SameLine();
+                HelpMarker(
+                    "Requires map names.\nDisplays a red letter for each missing completion.\nA for Awakened Completion\nB for Bonus Completion\nC for Completion."
+                );
                 Settings.ShowMapRegion.Value = Checkbox("Show Region Name", Settings.ShowMapRegion);
-                Settings.TargetRegions.Value = Checkbox("Enable Region Targeting ", Settings.TargetRegions);
-                ImGui.SameLine(); HelpMarker("Open the Atlas and tick the regions you want to highlight. Requires Show Region Name.");
-                if (Settings.TargetRegions) Settings.ShowMapRegion.Value = true;
-                Settings.ShowModWarnings.Value = Checkbox("Show Mod Warnings", Settings.ShowModWarnings);
-                ImGui.SameLine(); HelpMarker("Configured in 'ModWarnings.txt' in the plugin folder, created if missing.");
-                Settings.ShowModCount.Value = Checkbox("Show Number of Mods on Map", Settings.ShowModCount);
-                Settings.ShowPackSizePercent.Value = Checkbox("Show Pack Size %", Settings.ShowPackSizePercent);
-                Settings.ShowQuantityPercent.Value = Checkbox("Show Item Quantity %", Settings.ShowQuantityPercent);
-                Settings.ColorQuantityPercent.Value = Checkbox("Warn Below Quantity Percentage", Settings.ColorQuantityPercent);
+                Settings.TargetRegions.Value = Checkbox(
+                    "Enable Region Targeting ",
+                    Settings.TargetRegions
+                );
+                ImGui.SameLine();
+                HelpMarker(
+                    "Open the Atlas and tick the regions you want to highlight. Requires Show Region Name."
+                );
+                if (Settings.TargetRegions)
+                    Settings.ShowMapRegion.Value = true;
+                Settings.ShowModWarnings.Value = Checkbox(
+                    "Show Mod Warnings",
+                    Settings.ShowModWarnings
+                );
+                ImGui.SameLine();
+                HelpMarker(
+                    "Configured in 'ModWarnings.txt' in the plugin folder, created if missing."
+                );
+                Settings.ShowModCount.Value = Checkbox(
+                    "Show Number of Mods on Map",
+                    Settings.ShowModCount
+                );
+                Settings.ShowPackSizePercent.Value = Checkbox(
+                    "Show Pack Size %",
+                    Settings.ShowPackSizePercent
+                );
+                Settings.ShowQuantityPercent.Value = Checkbox(
+                    "Show Item Quantity %",
+                    Settings.ShowQuantityPercent
+                );
+                Settings.ColorQuantityPercent.Value = Checkbox(
+                    "Warn Below Quantity Percentage",
+                    Settings.ColorQuantityPercent
+                );
                 Settings.ColorQuantity.Value = IntSlider("##ColorQuantity", Settings.ColorQuantity);
-                ImGui.SameLine(); HelpMarker("The colour of the quantity text will be red below this amount and green above it.");
-                Settings.NonUnchartedList.Value = Checkbox("Display Maven Boss List for non-uncharted regions", Settings.NonUnchartedList);
-                ImGui.SameLine(); HelpMarker("This will show (up to) all 10 bosses you have slain in a normal region as a full list.\nDisplays a count for normal regions otherwise.");
+                ImGui.SameLine();
+                HelpMarker(
+                    "The colour of the quantity text will be red below this amount and green above it."
+                );
+                ImGui.Separator();
+                ImGui.Text("Originator Map Bonus Stats");
+                Settings.ShowOriginatorMaps.Value = Checkbox(
+                    "Show More Maps %%",
+                    Settings.ShowOriginatorMaps
+                );
+                Settings.ShowOriginatorScarabs.Value = Checkbox(
+                    "Show More Scarabs %%",
+                    Settings.ShowOriginatorScarabs
+                );
+                Settings.ShowOriginatorCurrency.Value = Checkbox(
+                    "Show More Currency %%",
+                    Settings.ShowOriginatorCurrency
+                );
+
+                Settings.NonUnchartedList.Value = Checkbox(
+                    "Display Maven Boss List for non-uncharted regions",
+                    Settings.NonUnchartedList
+                );
+                ImGui.SameLine();
+                HelpMarker(
+                    "This will show (up to) all 10 bosses you have slain in a normal region as a full list.\nDisplays a count for normal regions otherwise."
+                );
             }
             if (ImGui.TreeNodeEx("Borders and Colours", ImGuiTreeNodeFlags.CollapsingHeader))
             {
+                Settings.MapBorderStyle.Value = Checkbox(
+                    "Map Item Draw Style",
+                    Settings.MapBorderStyle
+                );
+                ImGui.SameLine();
+                ImGui.SameLine();
+                HelpMarker("Frame = off, Box = on");
 
-                Settings.MapBorderStyle.Value = Checkbox("Map Item Draw Style", Settings.MapBorderStyle); ImGui.SameLine();
-                ImGui.SameLine(); HelpMarker("Frame = off, Box = on");
+                Settings.BorderDeflation.Value = IntSlider(
+                    "Map Border Deflation##MapBorderDeflation",
+                    Settings.BorderDeflation
+                );
+                Settings.BorderThickness.Value = IntSlider(
+                    "Border Thickness##BorderThickness",
+                    Settings.BorderThickness
+                );
+                Settings.BorderThickness.Value = IntSlider(
+                    "Completion Border Thickness##BorderThickness",
+                    Settings.BorderThickness
+                );
 
-                Settings.BorderDeflation.Value = IntSlider("Map Border Deflation##MapBorderDeflation", Settings.BorderDeflation);
-                Settings.BorderThickness.Value = IntSlider("Border Thickness##BorderThickness", Settings.BorderThickness);
-                Settings.BorderThickness.Value = IntSlider("Completion Border Thickness##BorderThickness", Settings.BorderThickness);
+                Settings.DefaultBorderTextColor = ColorButton(
+                    "Text colour for maps with borders",
+                    Settings.DefaultBorderTextColor
+                );
+                Settings.StyleTextForBorder.Value = Checkbox(
+                    "Use border colour for text colour",
+                    Settings.StyleTextForBorder
+                );
+                ImGui.SameLine();
+                HelpMarker(
+                    "i.e. if you have Harvest in green, 'Harvest' will be written in green in the tooltip."
+                );
 
-                Settings.DefaultBorderTextColor = ColorButton("Text colour for maps with borders", Settings.DefaultBorderTextColor);
-                Settings.StyleTextForBorder.Value = Checkbox("Use border colour for text colour", Settings.StyleTextForBorder);
-                ImGui.SameLine(); HelpMarker("i.e. if you have Harvest in green, 'Harvest' will be written in green in the tooltip.");
-
-                Settings.ElderGuardianBorder.Value = Checkbox("##elder", Settings.ElderGuardianBorder); ImGui.SameLine();
+                Settings.ElderGuardianBorder.Value = Checkbox(
+                    "##elder",
+                    Settings.ElderGuardianBorder
+                );
+                ImGui.SameLine();
                 Settings.ElderGuardian = ColorButton("Elder Guardian", Settings.ElderGuardian);
 
-                Settings.ShaperGuardianBorder.Value = Checkbox("##shaper", Settings.ShaperGuardianBorder); ImGui.SameLine();
+                Settings.ShaperGuardianBorder.Value = Checkbox(
+                    "##shaper",
+                    Settings.ShaperGuardianBorder
+                );
+                ImGui.SameLine();
                 Settings.ShaperGuardian = ColorButton("Shaper Guardian", Settings.ShaperGuardian);
 
-                Settings.HarvestBorder.Value = Checkbox("##harvest", Settings.HarvestBorder); ImGui.SameLine();
+                Settings.HarvestBorder.Value = Checkbox("##harvest", Settings.HarvestBorder);
+                ImGui.SameLine();
                 Settings.Harvest = ColorButton("Harvest", Settings.Harvest);
 
-                Settings.DeliriumBorder.Value = Checkbox("##delirium", Settings.DeliriumBorder); ImGui.SameLine();
+                Settings.DeliriumBorder.Value = Checkbox("##delirium", Settings.DeliriumBorder);
+                ImGui.SameLine();
                 Settings.Delirium = ColorButton("Delirium", Settings.Delirium);
 
-                Settings.BlightedBorder.Value = Checkbox("##blighted", Settings.BlightedBorder); ImGui.SameLine();
+                Settings.BlightedBorder.Value = Checkbox("##blighted", Settings.BlightedBorder);
+                ImGui.SameLine();
                 Settings.Blighted = ColorButton("Blighted Map", Settings.Blighted);
 
-                Settings.BlightEncounterBorder.Value = Checkbox("##blightenc", Settings.BlightEncounterBorder); ImGui.SameLine();
-                Settings.BlightEncounter = ColorButton("Blight in normal map", Settings.BlightEncounter);
+                Settings.BlightEncounterBorder.Value = Checkbox(
+                    "##blightenc",
+                    Settings.BlightEncounterBorder
+                );
+                ImGui.SameLine();
+                Settings.BlightEncounter = ColorButton(
+                    "Blight in normal map",
+                    Settings.BlightEncounter
+                );
 
-                Settings.MetamorphBorder.Value = Checkbox("##metamorph", Settings.MetamorphBorder); ImGui.SameLine();
+                Settings.MetamorphBorder.Value = Checkbox("##metamorph", Settings.MetamorphBorder);
+                ImGui.SameLine();
                 Settings.Metamorph = ColorButton("Metamorph", Settings.Metamorph);
 
-                Settings.LegionBorder.Value = Checkbox("##legion", Settings.LegionBorder); ImGui.SameLine();
+                Settings.LegionBorder.Value = Checkbox("##legion", Settings.LegionBorder);
+                ImGui.SameLine();
                 Settings.Legion = ColorButton("Legion Monolith", Settings.Legion);
 
-                Settings.CompletionBorder.Value = Checkbox("Show borders for lack of completion##completion", Settings.CompletionBorder); 
+                Settings.CompletionBorder.Value = Checkbox(
+                    "Show borders for lack of completion##completion",
+                    Settings.CompletionBorder
+                );
                 Settings.Incomplete = ColorButton("Incomplete", Settings.Incomplete);
-                Settings.BonusIncomplete = ColorButton("Bonus Incomplete", Settings.BonusIncomplete);
-                Settings.AwakenedIncomplete = ColorButton("Awakened Incomplete", Settings.AwakenedIncomplete);
+                Settings.BonusIncomplete = ColorButton(
+                    "Bonus Incomplete",
+                    Settings.BonusIncomplete
+                );
+                Settings.AwakenedIncomplete = ColorButton(
+                    "Awakened Incomplete",
+                    Settings.AwakenedIncomplete
+                );
 
                 Settings.Bricked = ColorButton("Bricked Map", Settings.Bricked);
-                Settings.MapBorderWarnings = ColorButton("Show MapWarningBorder", Settings.MapBorderWarnings);
+                Settings.MapBorderWarnings = ColorButton(
+                    "Show MapWarningBorder",
+                    Settings.MapBorderWarnings
+                );
                 Settings.MapBorderBad = ColorButton("Show BadMapBorder", Settings.MapBorderBad);
-                Settings.MapQuantSetting.Value = IntSlider("##MapQuantSetting", Settings.MapQuantSetting);
-                Settings.MapPackSetting.Value = IntSlider("##MapPackSetting", Settings.MapPackSetting);
-                Settings.BorderThicknessMap.Value = IntSlider("Border Thickness for maps##BorderThickness Maps", Settings.BorderThicknessMap);
+                Settings.MapQuantSetting.Value = IntSlider(
+                    "##MapQuantSetting",
+                    Settings.MapQuantSetting
+                );
+                Settings.MapPackSetting.Value = IntSlider(
+                    "##MapPackSetting",
+                    Settings.MapPackSetting
+                );
+                Settings.BorderThicknessMap.Value = IntSlider(
+                    "Border Thickness for maps##BorderThickness Maps",
+                    Settings.BorderThicknessMap
+                );
             }
-            
+
             if (ImGui.TreeNodeEx("Config Files and Other", ImGuiTreeNodeFlags.CollapsingHeader))
             {
-                if (ImGui.Button("Reload Warnings Text Files")) { WarningDictionary = LoadConfigs(); BadModsDictionary = LoadConfigBadMod(); }
-                if (ImGui.Button("Recreate Default Warnings Text Files")) ResetConfigs();
-                ImGui.SameLine(); HelpMarker("This will irreversibly delete all your existing warnings config files!");
-                Settings.PadForNinjaPricer.Value = Checkbox("Pad for Ninja Pricer", Settings.PadForNinjaPricer);
-                ImGui.SameLine(); HelpMarker("This will move the tooltip down vertically to allow room for the Ninja Pricer tooltip to be rendered. Only needed with that plugin active.");
-                Settings.PadForNinjaPricer2.Value = Checkbox("More Pad for Ninja Pricer", Settings.PadForNinjaPricer2);
-                ImGui.SameLine(); HelpMarker("This will move the tooltip down vertically to allow room for the Ninja Pricer tooltip to be rendered. Only needed with that plugin active.");
-                Settings.PadForAltPricer.Value = Checkbox("Pad for Personal Pricer", Settings.PadForAltPricer);
-                ImGui.SameLine(); HelpMarker("It's unlikely you'll need this.");
+                if (ImGui.Button("Reload Warnings Text Files"))
+                {
+                    WarningDictionary = LoadConfigs();
+                    BadModsDictionary = LoadConfigBadMod();
+                }
+                if (ImGui.Button("Recreate Default Warnings Text Files"))
+                    ResetConfigs();
+                ImGui.SameLine();
+                HelpMarker(
+                    "This will irreversibly delete all your existing warnings config files!"
+                );
+                Settings.PadForNinjaPricer.Value = Checkbox(
+                    "Pad for Ninja Pricer",
+                    Settings.PadForNinjaPricer
+                );
+                ImGui.SameLine();
+                HelpMarker(
+                    "This will move the tooltip down vertically to allow room for the Ninja Pricer tooltip to be rendered. Only needed with that plugin active."
+                );
+                Settings.PadForNinjaPricer2.Value = Checkbox(
+                    "More Pad for Ninja Pricer",
+                    Settings.PadForNinjaPricer2
+                );
+                ImGui.SameLine();
+                HelpMarker(
+                    "This will move the tooltip down vertically to allow room for the Ninja Pricer tooltip to be rendered. Only needed with that plugin active."
+                );
+                Settings.PadForAltPricer.Value = Checkbox(
+                    "Pad for Personal Pricer",
+                    Settings.PadForAltPricer
+                );
+                ImGui.SameLine();
+                HelpMarker("It's unlikely you'll need this.");
                 ImGui.Spacing();
-                               
+
                 debug = Checkbox("Debug Features", debug);
-                ImGui.SameLine(); HelpMarker("Show mod names for quickly adding them to your ModWarnings.txt\nYou only need the start of a mod to match it, for example: 'MapBloodlinesModOnMagicsMapWorlds' would be matched with:\nMapBloodlines;Bloodlines;FF7F00FF");
+                ImGui.SameLine();
+                HelpMarker(
+                    "Show mod names for quickly adding them to your ModWarnings.txt\nYou only need the start of a mod to match it, for example: 'MapBloodlinesModOnMagicsMapWorlds' would be matched with:\nMapBloodlines;Bloodlines;FF7F00FF"
+                );
                 if (debug)
                 {
                     maven = Checkbox("Maven Debug", maven);
@@ -253,25 +471,33 @@ namespace MapNotify
                         ImGui.Text("Maven Regions:");
                         foreach (var region in MavenDict)
                         {
-
                             ImGui.TextColored(new nuVector4(0.5F, 0.5F, 1.2F, 1F), $"{region.Key}");
                             ImGui.SameLine();
-                            ImGui.TextColored(new nuVector4(1.2F, 0.5F, 0.5F, 1F), $"{region.Value}");
+                            ImGui.TextColored(
+                                new nuVector4(1.2F, 0.5F, 0.5F, 1F),
+                                $"{region.Value}"
+                            );
                         }
                     }
                     comp = Checkbox("Completion Debug", comp);
-                    
+
                     if (comp)
                     {
-                        ImGui.Text($"Bonus ({ingameState.ServerData.BonusCompletedAreas.Count}): ");
-                        foreach (var map in ingameState.ServerData.BonusCompletedAreas)
+                        ImGui.Text($"Bonus ({ingameState.ServerData.BonusCompletedNodes.Count}): ");
+                        foreach (var node in ingameState.ServerData.BonusCompletedNodes)
                         {
-                            ImGui.TextColored(new nuVector4(0.5F, 0.5F, 1.2F, 1F), $"{map.Name}");
+                            ImGui.TextColored(
+                                new nuVector4(0.5F, 0.5F, 1.2F, 1F),
+                                $"{node.Area?.Name}"
+                            );
                         }
-                        ImGui.Text($"Completion ({ingameState.ServerData.CompletedAreas.Count}): ");
-                        foreach (var map in ingameState.ServerData.CompletedAreas)
+                        ImGui.Text($"Completion ({ingameState.ServerData.CompletedNodes.Count}): ");
+                        foreach (var node in ingameState.ServerData.CompletedNodes)
                         {
-                            ImGui.TextColored(new nuVector4(0.5F, 0.5F, 1.2F, 1F), $"{map.Name}");
+                            ImGui.TextColored(
+                                new nuVector4(0.5F, 0.5F, 1.2F, 1F),
+                                $"{node.Area?.Name}"
+                            );
                         }
                     }
                     DebugHover();
@@ -281,7 +507,6 @@ namespace MapNotify
                         {
                             ImGui.TextColored(new nuVector4(0.5F, 0.5F, 1.2F, 1F), mod);
                         }
-
                 }
             }
         }
