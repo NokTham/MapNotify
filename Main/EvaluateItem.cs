@@ -117,15 +117,6 @@ namespace MapNotify
 
         public class ItemDetails
         {
-            public ItemDetails(NormalInventoryItem Item, Entity Entity)
-            {
-                this.Item = Item;
-                this.Entity = Entity;
-                ActiveWarnings = new List<StyledText>();
-                ActiveBadMods = new List<StyledText>();
-                Update();
-            }
-
             public NormalInventoryItem Item { get; }
             public ServerInventory.InventSlotItem ItemS { get; }
             public Entity Entity { get; }
@@ -153,6 +144,15 @@ namespace MapNotify
             public int OriginatorCurrency { get; set; }
             public int OriginatorMaps { get; set; }
             public bool IsOriginatorMap { get; set; }
+            public ItemDetails(NormalInventoryItem Item, Entity Entity)
+            {
+                this.Item = Item;
+                this.Entity = Entity;
+                ActiveWarnings = new List<StyledText>();
+                ActiveBadMods = new List<StyledText>();
+                Update();
+            }
+
             public void Update()
             {
                 var BaseItem = gameController.Files.BaseItemTypes.Translate(Entity.Path);
