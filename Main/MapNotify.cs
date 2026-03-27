@@ -10,7 +10,7 @@ using ImGuiNET;
 using SharpDX;
 using System.Collections.Generic;
 using System.Linq;
-using Map = ExileCore.PoEMemory.Components.Map;
+// using MapKey = ExileCore.PoEMemory.Components.Map;
 using nuVector2 = System.Numerics.Vector2;
 using nuVector4 = System.Numerics.Vector4;
 
@@ -21,6 +21,7 @@ public partial class MapNotify : BaseSettingsPlugin<MapNotifySettings>
     private RectangleF windowArea;
     private static GameController gameController;
     private static IngameState ingameState;
+    private static MapNotifySettings pluginSettings;
     public static Dictionary<string, StyledText> WarningDictionary;
     public static Dictionary<string, StyledText> BadModsDictionary;
     private CachedValue<List<NormalInventoryItem>> _inventoryItems;
@@ -28,6 +29,12 @@ public partial class MapNotify : BaseSettingsPlugin<MapNotifySettings>
 
     public MapNotify()
     {
+    }
+
+    private static bool ItemIsMap(Entity entity)
+    {
+        if (entity == null) return false;
+        return entity.HasComponent<MapKey>();
     }
 
     private List<NormalInventoryItem> GetInventoryItems()
@@ -41,7 +48,7 @@ public partial class MapNotify : BaseSettingsPlugin<MapNotifySettings>
 			{
 				foreach (var it in visible)
 				{
-					if (it?.Item != null && it.Item.HasComponent<Map>())
+					if (it?.Item != null && ItemIsMap(it.Item))
 						result.Add(it);
 				}
 			}
@@ -63,7 +70,7 @@ public partial class MapNotify : BaseSettingsPlugin<MapNotifySettings>
 			{
 				foreach (var it in visibleInv)
 				{
-					if (it?.Item != null && it.Item.HasComponent<Map>())
+					if (it?.Item != null && ItemIsMap(it.Item))
 						result.Add(it);
 				}
 			}
@@ -80,6 +87,7 @@ public partial class MapNotify : BaseSettingsPlugin<MapNotifySettings>
         BadModsDictionary = LoadConfigBadMod();
         gameController = GameController;
         ingameState = gameController.IngameState;
+        pluginSettings = Settings;
         _inventoryItems = new TimeCache<List<NormalInventoryItem>>(GetInventoryItems, Settings.InventoryCacheInterval);
         _stashItems = new TimeCache<(int stashIndex, List<NormalInventoryItem>)>(GetStashItems, Settings.StashCacheInterval);
         return true;
@@ -153,7 +161,7 @@ public partial class MapNotify : BaseSettingsPlugin<MapNotifySettings>
             var baseType = gameController.Files.BaseItemTypes.Translate(entity.Path);
             var classID = baseType.ClassName ?? string.Empty;
             // Not map, heist or watchstone or normal rarity heist
-            if (!entity.HasComponent<Map>() && !classID.Equals(string.Empty) &&
+            if (!ItemIsMap(entity) && !classID.Equals(string.Empty) &&
                 !entity.Path.Contains("BreachFragment") &&
                 !entity.Path.Contains("CurrencyElderFragment") &&
                 !entity.Path.Contains("ShaperFragment") &&
@@ -324,8 +332,22 @@ public partial class MapNotify : BaseSettingsPlugin<MapNotifySettings>
                         else if (Settings.ShowPackSizePercent && ItemDetails.PackSize != 0)
                             ImGui.TextColored(new nuVector4(1f, 1f, 1f, 1f), $"{ItemDetails.PackSize}%% Pack Size");
 
+
+if ((Settings.ShowOriginatorMaps) || 
+    (Settings.ShowOriginatorScarabs) || 
+    (Settings.ShowOriginatorCurrency))
+if (ItemDetails.IsOriginatorMap)
+{
+    ImGui.Separator();
+    if (Settings.ShowOriginatorMaps)
+        ImGui.TextColored(new nuVector4(0.5f, 0.85f, 1f, 1f), $"+{ItemDetails.OriginatorMaps}%% Maps");
+    if (Settings.ShowOriginatorScarabs)
+        ImGui.TextColored(new nuVector4(0.85f, 0.45f, 0.85f, 1f), $"+{ItemDetails.OriginatorScarabs}%% Scarabs");
+    if (Settings.ShowOriginatorCurrency)
+        ImGui.TextColored(new nuVector4(0.0f, 1.0f, 0.0f, 1.0f), $"+{ItemDetails.OriginatorCurrency}%% Currency");
+}
                         // Separator
-                        if (Settings.HorizontalLines && ItemDetails.ActiveWarnings.Count > 0 && (Settings.ShowModCount || Settings.ShowModWarnings))
+                        
                         {
                             if (Settings.ShowLineForZanaMaps && isInventory || !isInventory)
                                 ImGui.Separator();
@@ -345,7 +367,7 @@ public partial class MapNotify : BaseSettingsPlugin<MapNotifySettings>
                     ImGui.EndGroup();
 
                     // border for most notable maps in inventory
-                    if (ItemDetails.Bricked || entity.HasComponent<Map>() && (isInventory || Settings.AlwaysShowCompletionBorder))
+                    if (ItemDetails.Bricked || ItemIsMap(entity) && (isInventory || Settings.AlwaysShowCompletionBorder))
                     {
                         var min = ImGui.GetItemRectMin();
                         min.X -= 8;
@@ -393,6 +415,42 @@ public partial class MapNotify : BaseSettingsPlugin<MapNotifySettings>
         }
     }
 
+    private void DrawMapBorders(NormalInventoryItem item, Entity entity)
+    {
+        var rect = item.GetClientRect();
+        double deflatePercent = Settings.BorderDeflation;
+        var deflateWidth = (int)(rect.Width * (deflatePercent / 100.0));
+        var deflateHeight = (int)(rect.Height * (deflatePercent / 100.0));
+        rect.Inflate(-deflateWidth, -deflateHeight);
+
+        var itemDetails = entity.GetHudComponent<ItemDetails>() ?? new ItemDetails(item, entity);
+        entity.SetHudComponent(itemDetails);
+
+        if (Settings.BoxForMapWarnings &&
+            (itemDetails.Bricked || itemDetails.ModCount > 0) &&
+            entity.GetComponent<Mods>()?.ItemMods
+                .Where(x => !x.Group.Contains("MapAtlasInfluence"))
+                .Any(mod => WarningDictionary.Any(w => mod.RawName.Contains(w.Key))) == true)
+        {
+            if (Settings.MapBorderStyle)
+                Graphics.DrawBox(rect, Settings.MapBorderWarnings.ToSharpColor(), Settings.BorderThicknessMap);
+            else
+                Graphics.DrawFrame(rect, Settings.MapBorderWarnings.ToSharpColor(), Settings.BorderThicknessMap);
+        }
+
+        if (Settings.BoxForMapBadWarnings &&
+            (itemDetails.Bricked || itemDetails.ModCount > 0) &&
+            entity.GetComponent<Mods>()?.ItemMods
+                .Where(x => !x.Group.Contains("MapAtlasInfluence"))
+                .Any(mod => BadModsDictionary.Any(b => mod.RawName.Contains(b.Key))) == true)
+        {
+            if (Settings.MapBorderStyle)
+                Graphics.DrawBox(rect, Settings.MapBorderBad.ToSharpColor(), Settings.BorderThicknessMap);
+            else
+                Graphics.DrawFrame(rect, Settings.MapBorderBad.ToSharpColor(), Settings.BorderThicknessMap);
+        }
+    }
+
     public override void Render()
     {
         if (ingameState.IngameUi.Atlas.IsVisible)
@@ -433,109 +491,42 @@ public partial class MapNotify : BaseSettingsPlugin<MapNotifySettings>
         {
             foreach (var item in _inventoryItems.Value)
             {
-                if (!item.Item.HasComponent<Map>())
-                    continue;
-
-                var rect = item.GetClientRectCache;
-                double deflatePercent = Settings.BorderDeflation;
-                var deflateWidth = (int)(rect.Width * (deflatePercent / 100.0));
-                var deflateHeight = (int)(rect.Height * (deflatePercent / 100.0));
-                rect.Inflate(-deflateWidth, -deflateHeight);
-
-                // Get the item's details component or create a new one if it doesn't exist
-                var itemDetails = item.Item.GetHudComponent<ItemDetails>() ?? new ItemDetails(item, item.Item);
-                item.Item.SetHudComponent(itemDetails);
-
-                // Checking if we have Warning Setting or Bad Mods
-                if (Settings.BoxForMapWarnings)
-                {
-                    // Check if the item is "bricked" or has certain mods with warnings
-                    if ((itemDetails.Bricked || itemDetails.ModCount > 0) && item.Item.GetComponent<Mods>()?.ItemMods
-                            .Where(x => !x.Group.Contains("MapAtlasInfluence"))
-                            .Any(mod => WarningDictionary.Any(warning => mod.RawName.Contains(warning.Key))) == true)
-                    {
-                        // Draw a red frame around the item's bounding rectangle
-                        if (Settings.MapBorderStyle)
-                            Graphics.DrawBox(rect, Settings.MapBorderWarnings.ToSharpColor(), Settings.BorderThicknessMap);
-                        else
-                            Graphics.DrawFrame(rect, Settings.MapBorderWarnings.ToSharpColor(), Settings.BorderThicknessMap);
-                    }
-                }
-
-                if (Settings.BoxForMapBadWarnings)
-                {
-                    // Check if the item is "bricked" or has certain mods with warnings
-                    if ((itemDetails.Bricked || itemDetails.ModCount > 0) && item.Item.GetComponent<Mods>()?.ItemMods
-                            .Where(x => !x.Group.Contains("MapAtlasInfluence"))
-                            .Any(mod => BadModsDictionary.Any(bad => mod.RawName.Contains(bad.Key))) == true)
-                    {
-                        // Draw a red frame around the item's bounding rectangle
-                        if (Settings.MapBorderStyle)
-                            Graphics.DrawBox(rect, Settings.MapBorderBad.ToSharpColor(), Settings.BorderThicknessMap);
-                        else
-                            Graphics.DrawFrame(rect, Settings.MapBorderBad.ToSharpColor(), Settings.BorderThicknessMap);
-                    }
-                }
+                if (!ItemIsMap(item.Item)) continue;
+                try { DrawMapBorders(item, item.Item); } catch { }
             }
         }
 
-        // Check if the stash interface is visible and there is a visible stash present
+        // Map Stash Tab support — maps are direct children of StashElement (indices 1+),
+        // only active when VisibleStash is null (map tabs don't populate VisibleStash)
+        if (ingameState.IngameUi.StashElement?.IsVisible == true &&
+            ingameState.IngameUi.StashElement.VisibleStash == null)
+        {
+            try
+            {
+                var stashElement = ingameState.IngameUi.StashElement;
+                // Skip child 0 (background), maps start at index 1
+                for (int i = 1; i < stashElement.ChildCount; i++)
+                {
+                    try
+                    {
+                        var child = stashElement.GetChildAtIndex(i);
+                        if (child == null) continue;
+                        var invItem = child.AsObject<NormalInventoryItem>();
+                        if (invItem?.Item == null || !ItemIsMap(invItem.Item)) continue;
+                        DrawMapBorders(invItem, invItem.Item);
+                    }
+                    catch { }
+                }
+            }
+            catch { }
+        }
+
         if (ingameState.IngameUi.StashElement.IsVisible && ingameState.IngameUi.StashElement.VisibleStash != null && ingameState.IngameUi.StashElement.IndexVisibleStash == _stashItems.Value.stashIndex)
         {
-            // Iterate through each item in the visible stash's inventory
             foreach (var item in _stashItems.Value.Item2)
             {
-                // Skip the item if it doesn't have a "Map" component
-                if (!item.Item.HasComponent<Map>())
-                    continue;
-
-                // Assuming `item.GetClientRectCache` returns a Rectangle object.
-                var rect = item.GetClientRectCache;
-
-                // Percentage by which to deflate (e.g., 5%).
-                double deflatePercent = Settings.BorderDeflation;
-
-                // Calculate the deflate values based on the current size.
-                var deflateWidth = (int)(rect.Width * (deflatePercent / 100.0));
-                var deflateHeight = (int)(rect.Height * (deflatePercent / 100.0));
-
-                // Use negative values to deflate the rectangle.
-                rect.Inflate(-deflateWidth, -deflateHeight);
-
-                // Get the item's details component or create a new one if it doesn't exist
-                var itemDetails = item.Item.GetHudComponent<ItemDetails>() ?? new ItemDetails(item, item.Item);
-                item.Item.SetHudComponent(itemDetails);
-
-                // Checking if we have Warning Setting or Bad Mods
-                if(Settings.BoxForMapWarnings)
-                {
-                    // Check if the item is "bricked" or has certain mods with warnings
-                    if ((itemDetails.Bricked || itemDetails.ModCount > 0) && item.Item.GetComponent<Mods>()?.ItemMods
-                            .Where(x => !x.Group.Contains("MapAtlasInfluence"))
-                            .Any(mod => WarningDictionary.Any(warning => mod.RawName.Contains(warning.Key))) == true)
-                    {
-                        // Draw a red frame around the item's bounding rectangle
-                        if (Settings.MapBorderStyle)
-                            Graphics.DrawBox(rect, Settings.MapBorderWarnings.ToSharpColor(), Settings.BorderThicknessMap);
-                        else
-                            Graphics.DrawFrame(rect, Settings.MapBorderWarnings.ToSharpColor(), Settings.BorderThicknessMap);
-                    }
-                }
-
-                if (Settings.BoxForMapBadWarnings)
-                {
-                    // Check if the item is "bricked" or has certain mods with warnings
-                    if ((itemDetails.Bricked || itemDetails.ModCount > 0) && item.Item.GetComponent<Mods>()?.ItemMods
-                            .Where(x => !x.Group.Contains("MapAtlasInfluence"))
-                            .Any(mod => BadModsDictionary.Any(bad => mod.RawName.Contains(bad.Key))) == true)
-                    {
-                        // Draw a red frame around the item's bounding rectangle
-                        if (Settings.MapBorderStyle)
-                            Graphics.DrawBox(rect, Settings.MapBorderBad.ToSharpColor(), Settings.BorderThicknessMap);
-                        else
-                            Graphics.DrawFrame(rect, Settings.MapBorderBad.ToSharpColor(), Settings.BorderThicknessMap);
-                    }
-                }
+                if (!ItemIsMap(item.Item)) continue;
+                try { DrawMapBorders(item, item.Item); } catch { }
             }
         }
 
