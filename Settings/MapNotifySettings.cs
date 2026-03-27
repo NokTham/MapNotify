@@ -1,4 +1,4 @@
-﻿using ExileCore.Shared.Interfaces;
+using ExileCore.Shared.Interfaces;
 using ExileCore.Shared.Nodes;
 using Vector4 = System.Numerics.Vector4;
 
@@ -6,9 +6,11 @@ namespace MapNotify
 {
     public class MapNotifySettings : ISettings
     {
+        public ColorNode WarningColor { get; set; } = new SharpDX.Color(255, 0, 0, 255);
+        public RangeNode<int> WarningTokenWidth { get; set; } = new RangeNode<int>(2, 1, 10);
         public bool TargettingHaewarkHamlet = false;
         public bool TargettingTirnsEnd = false;
-        public bool TargettingLexProxima= false;
+        public bool TargettingLexProxima = false;
         public bool TargettingLexEjoris = false;
         public bool TargettingNewVastir = false;
         public bool TargettingGlennachCairns = false;
@@ -52,6 +54,11 @@ namespace MapNotify
         public ToggleNode BoxForBricked { get; set; } = new(true);
         public ToggleNode BoxForMapWarnings { get; set; } = new(true);
         public ToggleNode BoxForMapBadWarnings { get; set; } = new(true);
+
+        // Originator map bonus stats
+        public ToggleNode ShowOriginatorScarabs { get; set; } = new(true);
+        public ToggleNode ShowOriginatorCurrency { get; set; } = new(true);
+        public ToggleNode ShowOriginatorMaps { get; set; } = new(true);
 
         public ListNode BadModWarningsLoader { get; set; } = new();
         public Vector4 ElderGuardian { get; set; } = new(0.32f, 0.55f, 0.78f, 1f);
