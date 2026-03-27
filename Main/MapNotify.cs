@@ -26,6 +26,8 @@ public partial class MapNotify : BaseSettingsPlugin<MapNotifySettings>
     public static Dictionary<string, StyledText> BadModsDictionary;
     private CachedValue<List<NormalInventoryItem>> _inventoryItems;
     private CachedValue<(int stashIndex, List<NormalInventoryItem>)> _stashItems;
+    private CachedValue<List<NormalInventoryItem>> _merchantItems;
+        
 
     public MapNotify()
     {
@@ -56,29 +58,52 @@ public partial class MapNotify : BaseSettingsPlugin<MapNotifySettings>
         return result;
     }
 
-    private (int stashIndex, List<NormalInventoryItem>) GetStashItems()
+private (int stashIndex, List<NormalInventoryItem>) GetStashItems()
+{
+    var result = new List<NormalInventoryItem>();
+    var stashIndex = -1;
+    if (ingameState?.IngameUi?.StashElement?.IsVisible == true)
     {
-        var result = new List<NormalInventoryItem>();
-        var stashIndex = -1;
-		if (ingameState?.IngameUi?.StashElement?.IsVisible == true &&
-			ingameState.IngameUi.StashElement.VisibleStash != null)
-		{
-			stashIndex = ingameState.IngameUi.StashElement.IndexVisibleStash;
-
-			var visibleInv = ingameState.IngameUi.StashElement.VisibleStash.VisibleInventoryItems;
-			if (visibleInv != null && visibleInv.Count > 0)
-			{
-				foreach (var it in visibleInv)
-				{
-					if (it?.Item != null && ItemIsMap(it.Item))
-						result.Add(it);
-				}
-			}
-		}
-        return (stashIndex, result);
+        var stashElement = ingameState.IngameUi.StashElement;
+        stashIndex = stashElement.IndexVisibleStash;
+        
+        // Correct way to access player stash items:
+        var visibleInv = stashElement.VisibleStash?.VisibleInventoryItems;
+        if (visibleInv != null)
+        {
+            foreach (var it in visibleInv)
+            {
+                if (it?.Item != null && ItemIsMap(it.Item))
+                    result.Add(it);
+            }
+        }
     }
+    return (stashIndex, result);
+}
+	
+private List<NormalInventoryItem> GetMerchantItems()
+{
+    var result = new List<NormalInventoryItem>();
+    var merchantPanel = ingameState?.IngameUi?.OfflineMerchantPanel;
+    
+    if (merchantPanel != null && merchantPanel.IsVisible)
+    {
+        // Use VisibleStash here as well, as OfflineMerchantPanel inherits from StashElement
+        var visibleInv = merchantPanel.VisibleStash?.VisibleInventoryItems;
+        
+        if (visibleInv != null && visibleInv.Count > 0)
+        {
+            foreach (var it in visibleInv)
+            {
+                if (it?.Item != null && ItemIsMap(it.Item))
+                    result.Add(it);
+            }
+        }
+    }
+    return result;
+}
 
-    public override bool Initialise()
+		    public override bool Initialise()
     {
         base.Initialise();
         Name = "Map Mod Notifications";
@@ -90,6 +115,7 @@ public partial class MapNotify : BaseSettingsPlugin<MapNotifySettings>
         pluginSettings = Settings;
         _inventoryItems = new TimeCache<List<NormalInventoryItem>>(GetInventoryItems, Settings.InventoryCacheInterval);
         _stashItems = new TimeCache<(int stashIndex, List<NormalInventoryItem>)>(GetStashItems, Settings.StashCacheInterval);
+        _merchantItems = new TimeCache<List<NormalInventoryItem>>(GetMerchantItems, Settings.InventoryCacheInterval);
         return true;
     }
 
@@ -216,9 +242,7 @@ public partial class MapNotify : BaseSettingsPlugin<MapNotifySettings>
                     framePos.X += 10 + boxSize.X;
                     framePos.Y -= 200;
                     boxOrigin = new nuVector2(framePos.X, framePos.Y + rowSize);
-
                 }
-
                 // create the imgui faux tooltip
                 var _opened = true;
                 // Color background
@@ -496,31 +520,7 @@ if (ItemDetails.IsOriginatorMap)
             }
         }
 
-        // Map Stash Tab support — maps are direct children of StashElement (indices 1+),
-        // only active when VisibleStash is null (map tabs don't populate VisibleStash)
-        if (ingameState.IngameUi.StashElement?.IsVisible == true &&
-            ingameState.IngameUi.StashElement.VisibleStash == null)
-        {
-            try
-            {
-                var stashElement = ingameState.IngameUi.StashElement;
-                // Skip child 0 (background), maps start at index 1
-                for (int i = 1; i < stashElement.ChildCount; i++)
-                {
-                    try
-                    {
-                        var child = stashElement.GetChildAtIndex(i);
-                        if (child == null) continue;
-                        var invItem = child.AsObject<NormalInventoryItem>();
-                        if (invItem?.Item == null || !ItemIsMap(invItem.Item)) continue;
-                        DrawMapBorders(invItem, invItem.Item);
-                    }
-                    catch { }
-                }
-            }
-            catch { }
-        }
-
+        
         if (ingameState.IngameUi.StashElement.IsVisible && ingameState.IngameUi.StashElement.VisibleStash != null && ingameState.IngameUi.StashElement.IndexVisibleStash == _stashItems.Value.stashIndex)
         {
             foreach (var item in _stashItems.Value.Item2)
@@ -529,7 +529,19 @@ if (ItemDetails.IsOriginatorMap)
                 try { DrawMapBorders(item, item.Item); } catch { }
             }
         }
-
-
+        
+        if (ingameState.IngameUi.OfflineMerchantPanel.IsVisible)
+    {
+        foreach (var item in _merchantItems.Value)
+        {
+            // Note: NormalInventoryItem.Item is the Entity
+            if (item?.Item == null || !ItemIsMap(item.Item)) continue;
+            try 
+            { 
+                DrawMapBorders(item, item.Item); 
+            } 
+            catch { }
+        }
     }
+}
 }
