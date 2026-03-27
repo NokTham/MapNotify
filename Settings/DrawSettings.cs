@@ -279,7 +279,7 @@ namespace MapNotify
                     "The colour of the quantity text will be red below this amount and green above it."
                 );
                 ImGui.Separator();
-                ImGui.Text("Originator Map Bonus Stats");
+                ImGui.Text("Originator/Nightmare Map Bonus Stats");
                 Settings.ShowOriginatorMaps.Value = Checkbox(
                     "Show More Maps %%",
                     Settings.ShowOriginatorMaps
