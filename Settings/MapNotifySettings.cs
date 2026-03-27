@@ -55,7 +55,7 @@ namespace MapNotify
         public ToggleNode BoxForMapWarnings { get; set; } = new(true);
         public ToggleNode BoxForMapBadWarnings { get; set; } = new(true);
 
-        // Originator map bonus stats
+        // Originator/Nightmare map bonus stats
         public ToggleNode ShowOriginatorScarabs { get; set; } = new(true);
         public ToggleNode ShowOriginatorCurrency { get; set; } = new(true);
         public ToggleNode ShowOriginatorMaps { get; set; } = new(true);
