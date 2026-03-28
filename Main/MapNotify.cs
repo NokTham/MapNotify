@@ -27,6 +27,16 @@ public partial class MapNotify : BaseSettingsPlugin<MapNotifySettings>
     private CachedValue<(int stashIndex, List<NormalInventoryItem>)> _stashItems;
     private CachedValue<List<NormalInventoryItem>> _merchantItems;
     private CachedValue<List<NormalInventoryItem>> _purchaseWindowItems;
+    private bool _showPreviewWindow;
+    private List<CapturedMod> _capturedMods = new List<CapturedMod>();
+
+    public class CapturedMod
+{
+    public string RawName;
+    public string DisplayName;
+    public nuVector4 Color = new nuVector4(1, 0, 0, 1); // Default Red
+    public bool IsBricking;
+}
 
     public MapNotify() { }
 
@@ -741,6 +751,44 @@ public partial class MapNotify : BaseSettingsPlugin<MapNotifySettings>
 
     public override void Render()
     {
+
+        // Capture Hotkey Logic
+    if (Settings.CaptureHotkey.PressedOnce())
+    {
+        // REMOVE 'var' here because uiHover is declared further down in the method
+        var captureHover = ingameState.UIHover; 
+        if (captureHover?.IsVisible == true)
+        {
+            var hoverItem = captureHover.AsObject<NormalInventoryItem>();
+            if (hoverItem?.Item != null && ItemIsMap(hoverItem.Item))
+            {
+                var mods = hoverItem.Item.GetComponent<Mods>();
+                if (mods != null)
+                {
+                    _capturedMods.Clear();
+                    foreach (var mod in mods.ItemMods)
+                    {
+                        var existing = WarningDictionary.TryGetValue(mod.RawName, out var styled) ? styled : null;
+                        
+                        _capturedMods.Add(new CapturedMod 
+                        { 
+                            RawName = mod.RawName, 
+                            DisplayName = existing?.Text ?? mod.Name,
+                            Color = existing != null ? ColorToNuVec4(existing.Color) : new nuVector4(1, 0, 0, 1),
+                            // Set IsBricking based on whether it exists in the BadModsDictionary
+                            IsBricking = BadModsDictionary.ContainsKey(mod.RawName)
+                        });
+                    }
+                    _showPreviewWindow = true;
+                }
+            }
+        }
+    }
+
+    if (_showPreviewWindow)
+    {
+        DrawPreviewWindow();
+    }
         if (ingameState == null)
             return;
         if (ingameState.IngameUi.Atlas.IsVisible)
@@ -829,4 +877,5 @@ public partial class MapNotify : BaseSettingsPlugin<MapNotifySettings>
                 RenderItem(hoverItem, hoverItem.Item);
         }
     }
+private nuVector4 ColorToNuVec4(SharpDX.Vector4 color) => new nuVector4(color.X, color.Y, color.Z, color.W);
 }
