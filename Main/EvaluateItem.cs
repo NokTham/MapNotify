@@ -281,12 +281,15 @@ namespace MapNotify
                             }
                             void UpdateValueIfStatExists(string key, Action<int> updateAction)
                             {
-                                var index =
-                                    mod.ModRecord.StatNames
-                                        .Select((value, index) => new { value, index })
-                                        .FirstOrDefault(pair => pair.value.Key == key)?.index ?? -1;
+                                // Added null check for ModRecord and StatNames
+                                if (mod?.ModRecord?.StatNames == null || mod.Values == null)
+                                    return;
 
-                                if (index != -1)
+                                var index = mod.ModRecord.StatNames
+                                                .Select((value, idx) => new { value, idx })
+                                                .FirstOrDefault(pair => pair.value?.Key == key)?.idx ?? -1;
+
+                                if (index != -1 && index < mod.Values.Count)
                                 {
                                     updateAction(mod.Values[index]);
                                 }
