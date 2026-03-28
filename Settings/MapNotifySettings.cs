@@ -20,6 +20,7 @@ namespace MapNotify
         public float AtlasX { get; set; }
         public float AtlasY { get; set; }
 
+        public HotkeyNode CaptureHotkey { get; set; } = new(System.Windows.Forms.Keys.F1);
         public ToggleNode Enable { get; set; } = new(true);
         public RangeNode<int> InventoryCacheInterval { get; set; } = new(50, 1, 2000);
         public RangeNode<int> StashCacheInterval { get; set; } = new(500, 1, 2000);
@@ -55,7 +56,7 @@ namespace MapNotify
         public ToggleNode BoxForMapWarnings { get; set; } = new(true);
         public ToggleNode BoxForMapBadWarnings { get; set; } = new(true);
 
-        // Originator/Nightmare map bonus stats
+        // Originator & Nightmare map bonus stats
         public ToggleNode ShowOriginatorScarabs { get; set; } = new(true);
         public ToggleNode ShowOriginatorCurrency { get; set; } = new(true);
         public ToggleNode ShowOriginatorMaps { get; set; } = new(true);
