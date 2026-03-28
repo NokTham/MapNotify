@@ -31,12 +31,12 @@ public partial class MapNotify : BaseSettingsPlugin<MapNotifySettings>
     private List<CapturedMod> _capturedMods = new List<CapturedMod>();
 
     public class CapturedMod
-{
-    public string RawName;
-    public string DisplayName;
-    public nuVector4 Color = new nuVector4(1, 0, 0, 1); // Default Red
-    public bool IsBricking;
-}
+    {
+        public string RawName;
+        public string DisplayName;
+        public nuVector4 Color = new nuVector4(1, 0, 0, 1); // Default Red
+        public bool IsBricking;
+    }
 
     public MapNotify() { }
 
@@ -753,42 +753,58 @@ public partial class MapNotify : BaseSettingsPlugin<MapNotifySettings>
     {
 
         // Capture Hotkey Logic
-    if (Settings.CaptureHotkey.PressedOnce())
-    {
-        // REMOVE 'var' here because uiHover is declared further down in the method
-        var captureHover = ingameState.UIHover; 
-        if (captureHover?.IsVisible == true)
+        if (Settings.CaptureHotkey.PressedOnce())
         {
-            var hoverItem = captureHover.AsObject<NormalInventoryItem>();
-            if (hoverItem?.Item != null && ItemIsMap(hoverItem.Item))
+            WarningDictionary = LoadConfigs(); // Force reload from file before capturing
+            var captureHover = ingameState.UIHover;
+            if (captureHover?.IsVisible == true)
             {
-                var mods = hoverItem.Item.GetComponent<Mods>();
-                if (mods != null)
+                var hoverItem = captureHover.AsObject<NormalInventoryItem>();
+                if (hoverItem?.Item != null && ItemIsMap(hoverItem.Item))
                 {
-                    _capturedMods.Clear();
-                    foreach (var mod in mods.ItemMods)
+                    var mods = hoverItem.Item.GetComponent<Mods>();
+                    if (mods != null)
                     {
-                        var existing = WarningDictionary.TryGetValue(mod.RawName, out var styled) ? styled : null;
-                        
-                        _capturedMods.Add(new CapturedMod 
-                        { 
-                            RawName = mod.RawName, 
-                            DisplayName = existing?.Text ?? mod.Name,
-                            Color = existing != null ? ColorToNuVec4(existing.Color) : new nuVector4(1, 0, 0, 1),
-                            // Set IsBricking based on whether it exists in the BadModsDictionary
-                            IsBricking = BadModsDictionary.ContainsKey(mod.RawName)
-                        });
+                        _capturedMods.Clear();
+                        foreach (var mod in mods.ItemMods)
+                        {
+                            var existingEntry = WarningDictionary.FirstOrDefault(x =>
+            mod.RawName.Contains(x.Key) || x.Key.Contains(mod.RawName)).Value;
+
+                            if (existingEntry != null)
+                            {
+                                // Mod found in config! Use those settings
+                                _capturedMods.Add(new CapturedMod
+                                {
+                                    RawName = mod.RawName,
+                                    DisplayName = existingEntry.Text,
+                                    Color = ColorToNuVec4(existingEntry.Color),
+                                    IsBricking = BadModsDictionary.ContainsKey(mod.RawName) || existingEntry.Bricking
+                                });
+                            }
+                            else
+                            {
+                                // Mod NOT found, use defaults
+                                _capturedMods.Add(new CapturedMod
+                                {
+                                    RawName = mod.RawName,
+                                    DisplayName = mod.Name,
+                                    Color = new nuVector4(1, 1, 1, 1), // Default white for new mods
+                                    IsBricking = false
+                                });
+                            }
+
+                        }
+                        _showPreviewWindow = true;
                     }
-                    _showPreviewWindow = true;
                 }
             }
         }
-    }
 
-    if (_showPreviewWindow)
-    {
-        DrawPreviewWindow();
-    }
+        if (_showPreviewWindow)
+        {
+            DrawPreviewWindow();
+        }
         if (ingameState == null)
             return;
         if (ingameState.IngameUi.Atlas.IsVisible)
@@ -877,5 +893,5 @@ public partial class MapNotify : BaseSettingsPlugin<MapNotifySettings>
                 RenderItem(hoverItem, hoverItem.Item);
         }
     }
-private nuVector4 ColorToNuVec4(SharpDX.Vector4 color) => new nuVector4(color.X, color.Y, color.Z, color.W);
+    private nuVector4 ColorToNuVec4(SharpDX.Vector4 color) => new nuVector4(color.X, color.Y, color.Z, color.W);
 }
