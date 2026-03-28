@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using ExileCore;
+using ExileCore.PoEMemory;
 using ExileCore.PoEMemory.Components;
 using ExileCore.PoEMemory.Elements;
 using ExileCore.PoEMemory.Elements.InventoryElements;
@@ -40,11 +41,11 @@ public partial class MapNotify : BaseSettingsPlugin<MapNotifySettings>
 
     public MapNotify() { }
 
-    private static bool ItemIsMap(Entity entity)
+    private bool ItemIsMap(Entity entity)
     {
-        if (entity == null)
-            return false;
-        return entity.HasComponent<MapKey>();
+        if (entity == null) return false;
+        // This tells C# exactly which class to use, ignoring the 'Elements' namespace
+        return entity.HasComponent<ExileCore.PoEMemory.Components.MapKey>();
     }
 
     private List<NormalInventoryItem> GetInventoryItems()
@@ -66,25 +67,75 @@ public partial class MapNotify : BaseSettingsPlugin<MapNotifySettings>
         return result;
     }
 
+    private void AddItemsFromElement(Element element, List<NormalInventoryItem> result)
+    {
+        if (element == null || !element.IsVisible) return;
+
+        // ExileAPI's NormalInventoryItem check
+        // Sometimes elements are both an Element and a NormalInventoryItem
+        var item = element.AsObject<NormalInventoryItem>();
+        if (item?.Item != null && item.Address != 0)
+        {
+            if (ItemIsMap(item.Item))
+            {
+                result.Add(item);
+            }
+            // If we found an item, we usually don't need to look at its children
+            return;
+        }
+
+        // If this wasn't an item, check all of its children (Recursion)
+        if (element.ChildCount > 0)
+        {
+            foreach (var child in element.Children)
+            {
+                AddItemsFromElement(child, result);
+            }
+        }
+    }
+
     private (int stashIndex, List<NormalInventoryItem>) GetStashItems()
     {
         var result = new List<NormalInventoryItem>();
-        var stashIndex = -1;
-        if (ingameState?.IngameUi?.StashElement?.IsVisible == true)
+        var stashElement = ingameState?.IngameUi?.StashElement;
+
+        if (stashElement?.IsVisible == true)
         {
-            var stashElement = ingameState.IngameUi.StashElement;
-            stashIndex = stashElement.IndexVisibleStash;
-            var visibleInv = stashElement.VisibleStash?.VisibleInventoryItems;
-            if (visibleInv != null)
+            // Start searching from the very top of the Stash UI
+            // This avoids needing to know the exact path 2->0->0...
+            FindMapsInElement(stashElement, result);
+        }
+
+        return (stashElement?.IndexVisibleStash ?? -1, result);
+    }
+    private void FindMapsInElement(Element element, List<NormalInventoryItem> result)
+    {
+        if (element == null || !element.IsVisible) return;
+
+        // In specialized tabs, the element itself might not be a NormalInventoryItem,
+        // but it might HAVE an Item property if we cast it.
+        var invItem = element.AsObject<NormalInventoryItem>();
+
+        if (invItem?.Item != null && invItem.Address != 0)
+        {
+            if (ItemIsMap(invItem.Item))
             {
-                foreach (var it in visibleInv)
-                {
-                    if (it?.Item != null && ItemIsMap(it.Item))
-                        result.Add(it);
-                }
+                if (!result.Any(x => x.Address == invItem.Address))
+                    result.Add(invItem);
+            }
+            // Even if we find an item, specialized tabs sometimes nest them.
+            // We continue searching just in case.
+        }
+
+        // Recursively check children
+        if (element.ChildCount > 0)
+        {
+            // Limit recursion depth to prevent crashes in massive UI trees
+            foreach (var child in element.Children)
+            {
+                FindMapsInElement(child, result);
             }
         }
-        return (stashIndex, result);
     }
 
     private List<NormalInventoryItem> GetMerchantItems()
