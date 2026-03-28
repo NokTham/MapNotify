@@ -82,46 +82,58 @@ namespace MapNotify
             }
         }
         private void DrawPreviewWindow()
+{
+    // 1. Set a default size for the first time it opens
+    // 2. Use ImGuiCond.FirstUseEver so it doesn't overwrite your manual resizing later
+    ImGui.SetNextWindowSize(new nuVector2(450, 600), ImGuiCond.FirstUseEver);
+
+    // 3. REMOVED ImGuiWindowFlags.AlwaysAutoResize
+    // 4. Added NoCollapse just to keep it looking like a tool window
+    if (ImGui.Begin("Map Mod Preview", ref _showPreviewWindow, ImGuiWindowFlags.NoCollapse))
+    {
+        ImGui.TextColored(new nuVector4(0.5f, 1f, 0.5f, 1f), "Captured Mods from Hovered Map:");
+        ImGui.TextDisabled("Drag the bottom-right corner to resize.");
+        ImGui.Separator();
+
+        // Use a child region for the scrolling part
+        // The -35 height leaves room for the Close button at the bottom
+        if (ImGui.BeginChild("ScrollingRegion", new nuVector2(0, -35), ImGuiChildFlags.Border))
         {
-            if (ImGui.Begin("Map Mod Preview", ref _showPreviewWindow, ImGuiWindowFlags.AlwaysAutoResize))
+            for (int i = 0; i < _capturedMods.Count; i++)
             {
-                ImGui.TextColored(new nuVector4(0.5f, 1f, 0.5f, 1f), "Captured Mods from Hovered Map:");
+                var mod = _capturedMods[i];
+                ImGui.PushID(i);
+
+                ImGui.TextWrapped($"Raw: {mod.RawName}");
+                
+                var dispName = mod.DisplayName;
+                if (ImGui.InputText("Display Name", ref dispName, 100)) mod.DisplayName = dispName;
+
+                var color = mod.Color;
+                if (ImGui.ColorEdit4("Color", ref color, ImGuiColorEditFlags.AlphaPreviewHalf)) mod.Color = color;
+
+                var brick = mod.IsBricking;
+                if (ImGui.Checkbox("Bricking Mod", ref brick)) mod.IsBricking = brick;
+
+                if (ImGui.Button("Save to Config")) SaveModToConfig(mod);
+                ImGui.SameLine();
+                if (ImGui.Button("Delete Existing")) DeleteModFromConfig(mod.RawName);
+                
                 ImGui.Separator();
-
-                for (int i = 0; i < _capturedMods.Count; i++)
-                {
-                    var mod = _capturedMods[i];
-                    ImGui.PushID(mod.RawName + i);
-
-                    ImGui.Text($"{mod.RawName}");
-
-                    var dispName = mod.DisplayName;
-                    if (ImGui.InputText("Tooltip Name", ref dispName, 100)) mod.DisplayName = dispName;
-
-                    var color = mod.Color;
-                    if (ImGui.ColorEdit4("Color", ref color, ImGuiColorEditFlags.AlphaPreviewHalf)) mod.Color = color;
-
-                    var brick = mod.IsBricking;
-                    if (ImGui.Checkbox("Bricking Mod", ref brick)) mod.IsBricking = brick;
-
-                    if (ImGui.Button("Save to Config"))
-                    {
-                        SaveModToConfig(mod);
-                    }
-                    ImGui.SameLine();
-                    if (ImGui.Button("Delete from Config"))
-                    {
-                        DeleteModFromConfig(mod.RawName);
-                    }
-
-                    ImGui.PopID();
-                    ImGui.Separator();
-                }
-
-                if (ImGui.Button("Close")) _showPreviewWindow = false;
+                ImGui.PopID();
             }
-            ImGui.End();
+            ImGui.EndChild();
         }
+
+        // The Close button will now stay anchored to the bottom of the window
+        if (ImGui.Button("Close Window", new nuVector2(-1, 0))) 
+        {
+            _showPreviewWindow = false;
+        }
+        
+        ImGui.End();
+    }
+}
 
         private void SaveModToConfig(CapturedMod mod)
         {
