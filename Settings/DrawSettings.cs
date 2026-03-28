@@ -48,110 +48,140 @@ namespace MapNotify
         }
         private string _rebindingNodeName = null;
         public void DrawHotkeySelector(string label, HotkeyNode node)
-{
-    ImGui.Text(label);
-    ImGui.SameLine();
-
-    bool isRebinding = _rebindingNodeName == label;
-    string buttonText = isRebinding ? "PRESS ANY KEY..." : $"{node.Value}###{label}";
-
-    if (ImGui.Button(buttonText, new nuVector2(150, 0)))
-    {
-        _rebindingNodeName = label;
-    }
-
-    if (isRebinding)
-    {
-        // Check for any key press
-        foreach (var key in System.Enum.GetValues<System.Windows.Forms.Keys>())
         {
-            if (key == System.Windows.Forms.Keys.None) continue;
-            if (Input.GetKeyState(key))
-            {
-                node.Value = key;
-                _rebindingNodeName = null;
-                break;
-            }
-        }
-
-        // Optional: Cancel with Escape
-        if (Input.GetKeyState(System.Windows.Forms.Keys.Escape))
-        {
-            _rebindingNodeName = null;
-        }
-    }
-}
-private void DrawPreviewWindow()
-{
-    if (ImGui.Begin("Map Mod Preview", ref _showPreviewWindow, ImGuiWindowFlags.AlwaysAutoResize))
-    {
-        ImGui.TextColored(new nuVector4(0.5f, 1f, 0.5f, 1f), "Captured Mods from Hovered Map:");
-        ImGui.Separator();
-
-        for (int i = 0; i < _capturedMods.Count; i++)
-        {
-            var mod = _capturedMods[i];
-            ImGui.PushID(mod.RawName + i);
-            
-            ImGui.Text($"{mod.RawName}");
-            
-            var dispName = mod.DisplayName;
-            if (ImGui.InputText("Tooltip Name", ref dispName, 100)) mod.DisplayName = dispName;
-
-            var color = mod.Color;
-            if (ImGui.ColorEdit4("Color", ref color, ImGuiColorEditFlags.AlphaPreviewHalf)) mod.Color = color;
-
-            var brick = mod.IsBricking;
-            if (ImGui.Checkbox("Bricking Mod", ref brick)) mod.IsBricking = brick;
-
-            if (ImGui.Button("Save to Config"))
-            {
-                SaveModToConfig(mod);
-            }
+            ImGui.Text(label);
             ImGui.SameLine();
-            if (ImGui.Button("Delete from Config"))
+
+            bool isRebinding = _rebindingNodeName == label;
+            string buttonText = isRebinding ? "PRESS ANY KEY..." : $"{node.Value}###{label}";
+
+            if (ImGui.Button(buttonText, new nuVector2(150, 0)))
             {
-                DeleteModFromConfig(mod.RawName);
+                _rebindingNodeName = label;
             }
-            
-            ImGui.PopID();
-            ImGui.Separator();
+
+            if (isRebinding)
+            {
+                // Check for any key press
+                foreach (var key in System.Enum.GetValues<System.Windows.Forms.Keys>())
+                {
+                    if (key == System.Windows.Forms.Keys.None) continue;
+                    if (Input.GetKeyState(key))
+                    {
+                        node.Value = key;
+                        _rebindingNodeName = null;
+                        break;
+                    }
+                }
+
+                // Optional: Cancel with Escape
+                if (Input.GetKeyState(System.Windows.Forms.Keys.Escape))
+                {
+                    _rebindingNodeName = null;
+                }
+            }
+        }
+        private void DrawPreviewWindow()
+        {
+            if (ImGui.Begin("Map Mod Preview", ref _showPreviewWindow, ImGuiWindowFlags.AlwaysAutoResize))
+            {
+                ImGui.TextColored(new nuVector4(0.5f, 1f, 0.5f, 1f), "Captured Mods from Hovered Map:");
+                ImGui.Separator();
+
+                for (int i = 0; i < _capturedMods.Count; i++)
+                {
+                    var mod = _capturedMods[i];
+                    ImGui.PushID(mod.RawName + i);
+
+                    ImGui.Text($"{mod.RawName}");
+
+                    var dispName = mod.DisplayName;
+                    if (ImGui.InputText("Tooltip Name", ref dispName, 100)) mod.DisplayName = dispName;
+
+                    var color = mod.Color;
+                    if (ImGui.ColorEdit4("Color", ref color, ImGuiColorEditFlags.AlphaPreviewHalf)) mod.Color = color;
+
+                    var brick = mod.IsBricking;
+                    if (ImGui.Checkbox("Bricking Mod", ref brick)) mod.IsBricking = brick;
+
+                    if (ImGui.Button("Save to Config"))
+                    {
+                        SaveModToConfig(mod);
+                    }
+                    ImGui.SameLine();
+                    if (ImGui.Button("Delete from Config"))
+                    {
+                        DeleteModFromConfig(mod.RawName);
+                    }
+
+                    ImGui.PopID();
+                    ImGui.Separator();
+                }
+
+                if (ImGui.Button("Close")) _showPreviewWindow = false;
+            }
+            ImGui.End();
         }
 
-        if (ImGui.Button("Close")) _showPreviewWindow = false;
-    }
-    ImGui.End();
-}
+        private void SaveModToConfig(CapturedMod mod)
+        {
+            var path = Path.Combine(ConfigDirectory, "ModWarnings.txt");
+            var hexColor = $"{(byte)(mod.Color.X * 255):X2}{(byte)(mod.Color.Y * 255):X2}{(byte)(mod.Color.Z * 255):X2}{(byte)(mod.Color.W * 255):X2}";
+            var newLine = $"{mod.RawName};{mod.DisplayName};{hexColor};{mod.IsBricking}";
 
-private void SaveModToConfig(CapturedMod mod)
-{
-    var path = Path.Combine(ConfigDirectory, "ModWarnings.txt");
-    var hexColor = $"{(byte)(mod.Color.X * 255):X2}{(byte)(mod.Color.Y * 255):X2}{(byte)(mod.Color.Z * 255):X2}{(byte)(mod.Color.W * 255):X2}";
-    var newLine = $"{mod.RawName};{mod.DisplayName};{hexColor};{mod.IsBricking}";
+            if (!File.Exists(path)) File.WriteAllText(path, "");
+            var lines = File.ReadAllLines(path).ToList();
 
-    List<string> lines = File.Exists(path) ? File.ReadAllLines(path).ToList() : new List<string>();
-    // Replace if exists, otherwise add
-    int index = lines.FindIndex(l => l.StartsWith(mod.RawName + ";"));
-    if (index != -1) lines[index] = newLine;
-    else lines.Add(newLine);
+            // Remove ANY existing line that matches this mod fuzzy-style
+            lines.RemoveAll(l =>
+            {
+                var configKey = l.Split(';')[0].Trim();
+                if (string.IsNullOrEmpty(configKey) || configKey.StartsWith("#")) return false;
+                return mod.RawName.IndexOf(configKey, System.StringComparison.OrdinalIgnoreCase) >= 0 ||
+                       configKey.IndexOf(mod.RawName, System.StringComparison.OrdinalIgnoreCase) >= 0;
+            });
 
-    File.WriteAllLines(path, lines);
-    WarningDictionary = LoadConfigs(); // Refresh the plugin's dictionary
-    LogMessage($"Saved mod: {mod.RawName}", 5);
-}
+            // Add the fresh version
+            lines.Add(newLine);
 
-private void DeleteModFromConfig(string rawName)
-{
-    var path = Path.Combine(ConfigDirectory, "ModWarnings.txt");
-    if (!File.Exists(path)) return;
+            File.WriteAllLines(path, lines);
+            WarningDictionary = LoadConfigs();
+            LogMessage($"Saved/Updated mod: {mod.RawName}", 5);
+        }
 
-    var lines = File.ReadAllLines(path).ToList();
-    var newLines = lines.Where(l => !l.StartsWith(rawName + ";")).ToList();
-    
-    File.WriteAllLines(path, newLines);
-    WarningDictionary = LoadConfigs();
-    LogMessage($"Deleted mod: {rawName}", 5);
-}
+        private void DeleteModFromConfig(string rawName)
+        {
+            var path = Path.Combine(ConfigDirectory, "ModWarnings.txt");
+            if (!File.Exists(path)) return;
+
+            var lines = File.ReadAllLines(path).ToList();
+
+            // Improved matching: Split line, get the first part, and check for "Fuzzy" equality
+            var lineToRemove = lines.FirstOrDefault(l =>
+            {
+                var configKey = l.Split(';')[0].Trim();
+                if (string.IsNullOrEmpty(configKey) || configKey.StartsWith("#")) return false;
+
+                // Match if one contains the other (handles ElementalReflect vs MapMonsterElementalReflection)
+                return rawName.IndexOf(configKey, System.StringComparison.OrdinalIgnoreCase) >= 0 ||
+                       configKey.IndexOf(rawName, System.StringComparison.OrdinalIgnoreCase) >= 0;
+            });
+
+            if (lineToRemove != null)
+            {
+                lines.Remove(lineToRemove);
+                File.WriteAllLines(path, lines);
+
+                // Refresh dictionaries
+                WarningDictionary = LoadConfigs();
+                BadModsDictionary = LoadConfigBadMod();
+                LogMessage($"Deleted mod entry: {lineToRemove.Split(';')[0]}", 5);
+            }
+            else
+            {
+                LogError($"Could not find {rawName} in ModWarnings.txt", 5);
+            }
+        }
         public static bool Checkbox(string labelString, bool boolValue)
         {
             ImGui.Checkbox(labelString, ref boolValue);
@@ -260,8 +290,8 @@ private void DeleteModFromConfig(string rawName)
             if (ImGui.TreeNodeEx("Core Settings", ImGuiTreeNodeFlags.CollapsingHeader))
             {
                 DrawHotkeySelector("Capture Hotkey", Settings.CaptureHotkey);
-    ImGui.SameLine();
-    HelpMarker("The key used to open the Map Mod Preview window while hovering over a map.");
+                ImGui.SameLine();
+                HelpMarker("The key used to open the Map Mod Preview window while hovering over a map.");
                 Settings.InventoryCacheInterval.Value = IntSlider(
                     "Inventory Item Caching Interval in ms",
                     Settings.InventoryCacheInterval
