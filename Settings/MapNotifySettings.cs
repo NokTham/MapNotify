@@ -20,6 +20,9 @@ namespace MapNotify
         public float AtlasX { get; set; }
         public float AtlasY { get; set; }
 
+        public ToggleNode UseControl { get; set; } = new(false);
+        public ToggleNode UseShift { get; set; } = new(false);
+        public ToggleNode UseAlt { get; set; } = new(false);
         public HotkeyNode CaptureHotkey { get; set; } = new(System.Windows.Forms.Keys.F1);
         public ToggleNode Enable { get; set; } = new(true);
         public RangeNode<int> InventoryCacheInterval { get; set; } = new(50, 1, 2000);
