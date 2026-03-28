@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using nuVector4 = System.Numerics.Vector4;
+using nuVector2 = System.Numerics.Vector2;
 
 namespace MapNotify
 {
@@ -45,7 +46,112 @@ namespace MapNotify
             );
             return refValue;
         }
+        private string _rebindingNodeName = null;
+        public void DrawHotkeySelector(string label, HotkeyNode node)
+{
+    ImGui.Text(label);
+    ImGui.SameLine();
 
+    bool isRebinding = _rebindingNodeName == label;
+    string buttonText = isRebinding ? "PRESS ANY KEY..." : $"{node.Value}###{label}";
+
+    if (ImGui.Button(buttonText, new nuVector2(150, 0)))
+    {
+        _rebindingNodeName = label;
+    }
+
+    if (isRebinding)
+    {
+        // Check for any key press
+        foreach (var key in System.Enum.GetValues<System.Windows.Forms.Keys>())
+        {
+            if (key == System.Windows.Forms.Keys.None) continue;
+            if (Input.GetKeyState(key))
+            {
+                node.Value = key;
+                _rebindingNodeName = null;
+                break;
+            }
+        }
+
+        // Optional: Cancel with Escape
+        if (Input.GetKeyState(System.Windows.Forms.Keys.Escape))
+        {
+            _rebindingNodeName = null;
+        }
+    }
+}
+private void DrawPreviewWindow()
+{
+    if (ImGui.Begin("Map Mod Preview", ref _showPreviewWindow, ImGuiWindowFlags.AlwaysAutoResize))
+    {
+        ImGui.TextColored(new nuVector4(0.5f, 1f, 0.5f, 1f), "Captured Mods from Hovered Map:");
+        ImGui.Separator();
+
+        for (int i = 0; i < _capturedMods.Count; i++)
+        {
+            var mod = _capturedMods[i];
+            ImGui.PushID(mod.RawName + i);
+            
+            ImGui.Text($"{mod.RawName}");
+            
+            var dispName = mod.DisplayName;
+            if (ImGui.InputText("Tooltip Name", ref dispName, 100)) mod.DisplayName = dispName;
+
+            var color = mod.Color;
+            if (ImGui.ColorEdit4("Color", ref color, ImGuiColorEditFlags.AlphaPreviewHalf)) mod.Color = color;
+
+            var brick = mod.IsBricking;
+            if (ImGui.Checkbox("Bricking Mod", ref brick)) mod.IsBricking = brick;
+
+            if (ImGui.Button("Save to Config"))
+            {
+                SaveModToConfig(mod);
+            }
+            ImGui.SameLine();
+            if (ImGui.Button("Delete from Config"))
+            {
+                DeleteModFromConfig(mod.RawName);
+            }
+            
+            ImGui.PopID();
+            ImGui.Separator();
+        }
+
+        if (ImGui.Button("Close")) _showPreviewWindow = false;
+    }
+    ImGui.End();
+}
+
+private void SaveModToConfig(CapturedMod mod)
+{
+    var path = Path.Combine(ConfigDirectory, "ModWarnings.txt");
+    var hexColor = $"{(byte)(mod.Color.X * 255):X2}{(byte)(mod.Color.Y * 255):X2}{(byte)(mod.Color.Z * 255):X2}{(byte)(mod.Color.W * 255):X2}";
+    var newLine = $"{mod.RawName};{mod.DisplayName};{hexColor};{mod.IsBricking}";
+
+    List<string> lines = File.Exists(path) ? File.ReadAllLines(path).ToList() : new List<string>();
+    // Replace if exists, otherwise add
+    int index = lines.FindIndex(l => l.StartsWith(mod.RawName + ";"));
+    if (index != -1) lines[index] = newLine;
+    else lines.Add(newLine);
+
+    File.WriteAllLines(path, lines);
+    WarningDictionary = LoadConfigs(); // Refresh the plugin's dictionary
+    LogMessage($"Saved mod: {mod.RawName}", 5);
+}
+
+private void DeleteModFromConfig(string rawName)
+{
+    var path = Path.Combine(ConfigDirectory, "ModWarnings.txt");
+    if (!File.Exists(path)) return;
+
+    var lines = File.ReadAllLines(path).ToList();
+    var newLines = lines.Where(l => !l.StartsWith(rawName + ";")).ToList();
+    
+    File.WriteAllLines(path, newLines);
+    WarningDictionary = LoadConfigs();
+    LogMessage($"Deleted mod: {rawName}", 5);
+}
         public static bool Checkbox(string labelString, bool boolValue)
         {
             ImGui.Checkbox(labelString, ref boolValue);
@@ -153,6 +259,9 @@ namespace MapNotify
 
             if (ImGui.TreeNodeEx("Core Settings", ImGuiTreeNodeFlags.CollapsingHeader))
             {
+                DrawHotkeySelector("Capture Hotkey", Settings.CaptureHotkey);
+    ImGui.SameLine();
+    HelpMarker("The key used to open the Map Mod Preview window while hovering over a map.");
                 Settings.InventoryCacheInterval.Value = IntSlider(
                     "Inventory Item Caching Interval in ms",
                     Settings.InventoryCacheInterval
