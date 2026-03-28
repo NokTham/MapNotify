@@ -769,27 +769,25 @@ public partial class MapNotify : BaseSettingsPlugin<MapNotifySettings>
                         foreach (var mod in mods.ItemMods)
                         {
                             var existingEntry = WarningDictionary.FirstOrDefault(x =>
-            mod.RawName.Contains(x.Key) || x.Key.Contains(mod.RawName)).Value;
+        mod.RawName.StartsWith(x.Key) || x.Key.StartsWith(mod.RawName)).Value;
 
                             if (existingEntry != null)
                             {
-                                // Mod found in config! Use those settings
                                 _capturedMods.Add(new CapturedMod
                                 {
                                     RawName = mod.RawName,
                                     DisplayName = existingEntry.Text,
                                     Color = ColorToNuVec4(existingEntry.Color),
-                                    IsBricking = BadModsDictionary.ContainsKey(mod.RawName) || existingEntry.Bricking
+                                    IsBricking = BadModsDictionary.Values.Any(x => x.Text == existingEntry.Text) || existingEntry.Bricking
                                 });
                             }
                             else
                             {
-                                // Mod NOT found, use defaults
                                 _capturedMods.Add(new CapturedMod
                                 {
                                     RawName = mod.RawName,
                                     DisplayName = mod.Name,
-                                    Color = new nuVector4(1, 1, 1, 1), // Default white for new mods
+                                    Color = new nuVector4(1, 1, 1, 1),
                                     IsBricking = false
                                 });
                             }
