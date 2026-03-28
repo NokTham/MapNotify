@@ -753,7 +753,14 @@ public partial class MapNotify : BaseSettingsPlugin<MapNotifySettings>
     {
 
         // Capture Hotkey Logic
-        if (Settings.CaptureHotkey.PressedOnce())
+        bool ctrlHeld = Input.GetKeyState(System.Windows.Forms.Keys.LControlKey) || Input.GetKeyState(System.Windows.Forms.Keys.RControlKey);
+        bool shiftHeld = Input.GetKeyState(System.Windows.Forms.Keys.LShiftKey) || Input.GetKeyState(System.Windows.Forms.Keys.RShiftKey);
+        bool altHeld = Input.GetKeyState(System.Windows.Forms.Keys.LMenu) || Input.GetKeyState(System.Windows.Forms.Keys.RMenu);
+
+        bool modifiersMatch = (Settings.UseControl == ctrlHeld) &&
+                             (Settings.UseShift == shiftHeld) &&
+                             (Settings.UseAlt == altHeld);
+        if (modifiersMatch && Settings.CaptureHotkey.PressedOnce())
         {
             WarningDictionary = LoadConfigs(); // Force reload from file before capturing
             var captureHover = ingameState.UIHover;
@@ -891,5 +898,6 @@ public partial class MapNotify : BaseSettingsPlugin<MapNotifySettings>
                 RenderItem(hoverItem, hoverItem.Item);
         }
     }
+
     private nuVector4 ColorToNuVec4(SharpDX.Vector4 color) => new nuVector4(color.X, color.Y, color.Z, color.W);
 }
