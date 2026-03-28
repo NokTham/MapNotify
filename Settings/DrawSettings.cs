@@ -47,25 +47,43 @@ namespace MapNotify
             return refValue;
         }
         private string _rebindingNodeName = null;
-        public void DrawHotkeySelector(string label, HotkeyNode node)
+        public void DrawHotkeySelector(string label, HotkeyNode node, ToggleNode ctrl, ToggleNode shift, ToggleNode alt)
         {
             ImGui.Text(label);
+
+            // Fix: Added 'ref' and accessed the underlying boolean '.Value'
+            var c = ctrl.Value;
+            if (ImGui.Checkbox("Ctrl##" + label, ref c)) ctrl.Value = c;
+            ImGui.SameLine();
+
+            var s = shift.Value;
+            if (ImGui.Checkbox("Shift##" + label, ref s)) shift.Value = s;
+            ImGui.SameLine();
+
+            var a = alt.Value;
+            if (ImGui.Checkbox("Alt##" + label, ref a)) alt.Value = a;
             ImGui.SameLine();
 
             bool isRebinding = _rebindingNodeName == label;
-            string buttonText = isRebinding ? "PRESS ANY KEY..." : $"{node.Value}###{label}";
 
-            if (ImGui.Button(buttonText, new nuVector2(150, 0)))
+            // Building string based on the ToggleNodes
+            string prefix = "";
+            if (ctrl.Value) prefix += "Ctrl + ";
+            if (shift.Value) prefix += "Shift + ";
+            if (alt.Value) prefix += "Alt + ";
+
+            string buttonText = isRebinding ? "PRESS KEY...###" + label : $"{prefix}{node.Value}###{label}";
+
+            if (ImGui.Button(buttonText, new System.Numerics.Vector2(150, 0)))
             {
                 _rebindingNodeName = label;
             }
 
             if (isRebinding)
             {
-                // Check for any key press
                 foreach (var key in System.Enum.GetValues<System.Windows.Forms.Keys>())
                 {
-                    if (key == System.Windows.Forms.Keys.None) continue;
+                    if (IsModifierKey(key) || key == System.Windows.Forms.Keys.None) continue;
                     if (Input.GetKeyState(key))
                     {
                         node.Value = key;
@@ -73,67 +91,74 @@ namespace MapNotify
                         break;
                     }
                 }
-
-                // Optional: Cancel with Escape
-                if (Input.GetKeyState(System.Windows.Forms.Keys.Escape))
-                {
-                    _rebindingNodeName = null;
-                }
+                if (Input.GetKeyState(System.Windows.Forms.Keys.Escape)) _rebindingNodeName = null;
             }
+        }
+        private bool IsModifierKey(System.Windows.Forms.Keys key)
+        {
+            return key == System.Windows.Forms.Keys.ControlKey ||
+                   key == System.Windows.Forms.Keys.LControlKey ||
+                   key == System.Windows.Forms.Keys.RControlKey ||
+                   key == System.Windows.Forms.Keys.ShiftKey ||
+                   key == System.Windows.Forms.Keys.LShiftKey ||
+                   key == System.Windows.Forms.Keys.RShiftKey ||
+                   key == System.Windows.Forms.Keys.Menu ||
+                   key == System.Windows.Forms.Keys.LMenu ||
+                   key == System.Windows.Forms.Keys.RMenu;
         }
         private void DrawPreviewWindow()
-{
-    // 1. Set a default size for the first time it opens
-    // 2. Use ImGuiCond.FirstUseEver so it doesn't overwrite your manual resizing later
-    ImGui.SetNextWindowSize(new nuVector2(450, 600), ImGuiCond.FirstUseEver);
-
-    // 3. REMOVED ImGuiWindowFlags.AlwaysAutoResize
-    // 4. Added NoCollapse just to keep it looking like a tool window
-    if (ImGui.Begin("Map Mod Preview", ref _showPreviewWindow, ImGuiWindowFlags.NoCollapse))
-    {
-        ImGui.TextColored(new nuVector4(0.5f, 1f, 0.5f, 1f), "Captured Mods from Hovered Map:");
-        ImGui.TextDisabled("Drag the bottom-right corner to resize.");
-        ImGui.Separator();
-
-        // Use a child region for the scrolling part
-        // The -35 height leaves room for the Close button at the bottom
-        if (ImGui.BeginChild("ScrollingRegion", new nuVector2(0, -35), ImGuiChildFlags.Border))
         {
-            for (int i = 0; i < _capturedMods.Count; i++)
+            // 1. Set a default size for the first time it opens
+            // 2. Use ImGuiCond.FirstUseEver so it doesn't overwrite your manual resizing later
+            ImGui.SetNextWindowSize(new nuVector2(450, 600), ImGuiCond.FirstUseEver);
+
+            // 3. REMOVED ImGuiWindowFlags.AlwaysAutoResize
+            // 4. Added NoCollapse just to keep it looking like a tool window
+            if (ImGui.Begin("Map Mod Preview", ref _showPreviewWindow, ImGuiWindowFlags.NoCollapse))
             {
-                var mod = _capturedMods[i];
-                ImGui.PushID(i);
-
-                ImGui.TextWrapped($"Raw: {mod.RawName}");
-                
-                var dispName = mod.DisplayName;
-                if (ImGui.InputText("Display Name", ref dispName, 100)) mod.DisplayName = dispName;
-
-                var color = mod.Color;
-                if (ImGui.ColorEdit4("Color", ref color, ImGuiColorEditFlags.AlphaPreviewHalf)) mod.Color = color;
-
-                var brick = mod.IsBricking;
-                if (ImGui.Checkbox("Bricking Mod", ref brick)) mod.IsBricking = brick;
-
-                if (ImGui.Button("Save to Config")) SaveModToConfig(mod);
-                ImGui.SameLine();
-                if (ImGui.Button("Delete Existing")) DeleteModFromConfig(mod.RawName);
-                
+                ImGui.TextColored(new nuVector4(0.5f, 1f, 0.5f, 1f), "Captured Mods from Hovered Map:");
+                ImGui.TextDisabled("Drag the bottom-right corner to resize.");
                 ImGui.Separator();
-                ImGui.PopID();
-            }
-            ImGui.EndChild();
-        }
 
-        // The Close button will now stay anchored to the bottom of the window
-        if (ImGui.Button("Close Window", new nuVector2(-1, 0))) 
-        {
-            _showPreviewWindow = false;
+                // Use a child region for the scrolling part
+                // The -35 height leaves room for the Close button at the bottom
+                if (ImGui.BeginChild("ScrollingRegion", new nuVector2(0, -35), ImGuiChildFlags.Border))
+                {
+                    for (int i = 0; i < _capturedMods.Count; i++)
+                    {
+                        var mod = _capturedMods[i];
+                        ImGui.PushID(i);
+
+                        ImGui.TextWrapped($"Raw: {mod.RawName}");
+
+                        var dispName = mod.DisplayName;
+                        if (ImGui.InputText("Display Name", ref dispName, 100)) mod.DisplayName = dispName;
+
+                        var color = mod.Color;
+                        if (ImGui.ColorEdit4("Color", ref color, ImGuiColorEditFlags.AlphaPreviewHalf)) mod.Color = color;
+
+                        var brick = mod.IsBricking;
+                        if (ImGui.Checkbox("Bricking Mod", ref brick)) mod.IsBricking = brick;
+
+                        if (ImGui.Button("Save to Config")) SaveModToConfig(mod);
+                        ImGui.SameLine();
+                        if (ImGui.Button("Delete Existing")) DeleteModFromConfig(mod.RawName);
+
+                        ImGui.Separator();
+                        ImGui.PopID();
+                    }
+                    ImGui.EndChild();
+                }
+
+                // The Close button will now stay anchored to the bottom of the window
+                if (ImGui.Button("Close Window", new nuVector2(-1, 0)))
+                {
+                    _showPreviewWindow = false;
+                }
+
+                ImGui.End();
+            }
         }
-        
-        ImGui.End();
-    }
-}
 
         private void SaveModToConfig(CapturedMod mod)
         {
@@ -301,7 +326,7 @@ namespace MapNotify
 
             if (ImGui.TreeNodeEx("Core Settings", ImGuiTreeNodeFlags.CollapsingHeader))
             {
-                DrawHotkeySelector("Capture Hotkey", Settings.CaptureHotkey);
+                DrawHotkeySelector("Capture Hotkey", Settings.CaptureHotkey, Settings.UseControl, Settings.UseShift, Settings.UseAlt);
                 ImGui.SameLine();
                 HelpMarker("The key used to open the Map Mod Preview window while hovering over a map.");
                 Settings.InventoryCacheInterval.Value = IntSlider(
