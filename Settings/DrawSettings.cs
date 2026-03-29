@@ -457,15 +457,15 @@ namespace MapNotify
                 ImGui.Separator();
                 ImGui.Text("Originator/Nightmare Map Bonus Stats");
                 Settings.ShowOriginatorMaps.Value = Checkbox(
-                    "Show More Maps %%",
+                    "Show More Maps %",
                     Settings.ShowOriginatorMaps
                 );
                 Settings.ShowOriginatorScarabs.Value = Checkbox(
-                    "Show More Scarabs %%",
+                    "Show More Scarabs %",
                     Settings.ShowOriginatorScarabs
                 );
                 Settings.ShowOriginatorCurrency.Value = Checkbox(
-                    "Show More Currency %%",
+                    "Show More Currency %",
                     Settings.ShowOriginatorCurrency
                 );
 
