@@ -445,13 +445,16 @@ namespace MapNotify
                     "Warn Below Quantity Percentage",
                     Settings.ColorQuantityPercent
                 );
-                Settings.ShowChisel.Value = Checkbox("Show Chisel %", Settings.ShowChisel.Value);
                 Settings.ColorQuantity.Value = IntSlider("##ColorQuantity", Settings.ColorQuantity);
                 ImGui.SameLine();
                 HelpMarker(
                     "The colour of the quantity text will be red below this amount and green above it."
                 );
-                ImGui.Separator();
+                Settings.ShowChisel.Value = Checkbox("Show Chisel %", Settings.ShowChisel.Value);
+                ImGui.SameLine();
+                HelpMarker(
+                    "Show chisel applied to map, Maven or Cartographer's (legacy) ."
+                );
                 ImGui.Text("Originator/Nightmare Map Bonus Stats");
                 Settings.ShowOriginatorMaps.Value = Checkbox(
                     "Show More Maps %",
