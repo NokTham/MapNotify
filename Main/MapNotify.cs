@@ -44,7 +44,6 @@ public partial class MapNotify : BaseSettingsPlugin<MapNotifySettings>
     private bool ItemIsMap(Entity entity)
     {
         if (entity == null) return false;
-        // This tells C# exactly which class to use, ignoring the 'Elements' namespace
         return entity.HasComponent<ExileCore.PoEMemory.Components.MapKey>();
     }
 
@@ -163,8 +162,6 @@ public partial class MapNotify : BaseSettingsPlugin<MapNotifySettings>
         var ui = ingameState?.IngameUi;
         if (ui == null)
             return new List<NormalInventoryItem>();
-
-        // Fix for CS0173: Explicitly cast to the base Element type
         ExileCore.PoEMemory.Element window = null;
         if (ui.PurchaseWindow?.IsVisible == true)
             window = ui.PurchaseWindow;
@@ -188,7 +185,6 @@ public partial class MapNotify : BaseSettingsPlugin<MapNotifySettings>
                     var inventoryGrid = tab.GetChildAtIndex(0);
                     if (inventoryGrid != null)
                     {
-                        // Using the NinjaPrice logic that worked for you
                         var itemList = inventoryGrid
                             .GetChildrenAs<NormalInventoryItem>()
                             .Skip(1)
@@ -204,13 +200,10 @@ public partial class MapNotify : BaseSettingsPlugin<MapNotifySettings>
         }
         return result;
     }
-
-    // Helper to find the inventory grid inside complex vendor windows
     private ExileCore.PoEMemory.Element FindItemsContainer(ExileCore.PoEMemory.Element root)
     {
         if (root == null)
             return null;
-        // The item grid usually has a lot of children (one per item slot)
         if (root.ChildCount > 10)
             return root;
         foreach (var child in root.Children)
@@ -323,10 +316,8 @@ public partial class MapNotify : BaseSettingsPlugin<MapNotifySettings>
         var item = Item;
         if (entity.Address != 0 && entity.IsValid)
         {
-            // Base and Class ID
             var baseType = gameController.Files.BaseItemTypes.Translate(entity.Path);
             var classID = baseType.ClassName ?? string.Empty;
-            // Not map, heist or watchstone or normal rarity heist
             if (
                 !ItemIsMap(entity)
                     && !classID.Equals(string.Empty)
@@ -604,11 +595,14 @@ public partial class MapNotify : BaseSettingsPlugin<MapNotifySettings>
                                 new nuVector4(1f, 1f, 1f, 1f),
                                 $"{ItemDetails.PackSize}%% Pack Size"
                             );
-
+                        if (Settings.ShowChisel.Value && !string.IsNullOrEmpty(ItemDetails.ChiselName))
+                        {
+                            ImGui.TextColored(new nuVector4(1f, 1f, 1f, 1f), $"+{ItemDetails.ChiselValue}%% {ItemDetails.ChiselName}");
+                        }
                         if (
-                            (Settings.ShowOriginatorMaps)
-                            || (Settings.ShowOriginatorScarabs)
-                            || (Settings.ShowOriginatorCurrency)
+                            Settings.ShowOriginatorMaps
+                            || Settings.ShowOriginatorScarabs
+                            || Settings.ShowOriginatorCurrency
                         )
                             if (ItemDetails.IsOriginatorMap)
                             {
@@ -628,13 +622,9 @@ public partial class MapNotify : BaseSettingsPlugin<MapNotifySettings>
                                         new nuVector4(0.0f, 1.0f, 0.0f, 1.0f),
                                         $"+{ItemDetails.OriginatorCurrency}%% Currency"
                                     );
+                                    ImGui.Separator();
                             }
-                        // Separator
 
-                        {
-                            if (Settings.ShowLineForZanaMaps && isInventory || !isInventory)
-                                ImGui.Separator();
-                        }
                     }
                     // Count Mods
                     if (
@@ -914,7 +904,7 @@ public partial class MapNotify : BaseSettingsPlugin<MapNotifySettings>
                 catch { }
             }
         }
-        // 4. Combined Purchase/Haggle Optimized Block (Fix for CS0128)
+        // 4. Combined Purchase/Haggle Optimized Block
         var ui = ingameState.IngameUi;
         bool isShopVisible =
             ui.PurchaseWindow?.IsVisible == true
