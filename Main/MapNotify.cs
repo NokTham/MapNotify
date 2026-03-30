@@ -597,7 +597,7 @@ public partial class MapNotify : BaseSettingsPlugin<MapNotifySettings>
                             );
                         if (Settings.ShowChisel.Value && !string.IsNullOrEmpty(ItemDetails.ChiselName))
                         {
-                            ImGui.TextColored(new nuVector4(1f, 1f, 1f, 1f), $"+{ItemDetails.ChiselValue}%% {ItemDetails.ChiselName}");
+                            ImGui.TextColored(new nuVector4(1f, 0.80f, 0.30f, 1f), $"+{ItemDetails.ChiselValue}%% {ItemDetails.ChiselName}");
                         }
                         if (
                             Settings.ShowOriginatorMaps
