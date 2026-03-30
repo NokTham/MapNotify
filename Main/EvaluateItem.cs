@@ -128,6 +128,8 @@ namespace MapNotify
             public string MapName { get; set; }
             public string MapRegion { get; set; }
             public string ClassID { get; set; }
+            public string ChiselName { get; set; }
+            public int ChiselValue { get; set; }
             public int PackSize { get; set; }
             public int Quantity { get; set; }
             public int ModCount { get; set; }
@@ -158,8 +160,9 @@ namespace MapNotify
                 var BaseItem = gameController.Files.BaseItemTypes.Translate(Entity.Path);
                 var ItemName = BaseItem.BaseName;
                 ClassID = BaseItem.ClassName;
+                ChiselName = string.Empty;
+                ChiselValue = 0;
                 var mavenDetails = new MavenDetails();
-
                 var packSize = 0;
                 var quantity = Entity.GetComponent<Quality>()?.ItemQuality ?? 0;
                 var originatorScarabs = 0;
@@ -167,8 +170,7 @@ namespace MapNotify
                 var originatorMaps = 0;
                 var settings = pluginSettings;
                 // get and evaluate mods
-                var mapComponent =
-                    Entity.GetComponent<ExileCore.PoEMemory.Components.MapKey>() ?? null;
+                var mapComponent = Entity.GetComponent<ExileCore.PoEMemory.Components.MapKey>() ?? null;
                 Tier = mapComponent?.Tier ?? -1;
                 NeedsPadding = Tier == -1 ? false : true;
                 ZanaMissionType = ObjectiveType.None;
@@ -176,6 +178,18 @@ namespace MapNotify
                 Corrupted = Entity.GetComponent<Base>()?.isCorrupted ?? false;
 
                 var modsComponent = Entity.GetComponent<Mods>() ?? null;
+
+                if (modsComponent?.AlternateQualityType != null)
+                {
+                    var qualityId = modsComponent.AlternateQualityType.Id;
+
+                    if (qualityId == "MapRarityQuality") { ChiselName = "Rarity Chisel"; ChiselValue = 40; }
+                    else if (qualityId == "MapQuantityQuality") { ChiselName = "Quantity Chisel"; ChiselValue = 20; }
+                    else if (qualityId == "MapPackSizeQuality") { ChiselName = "Pack Size Chisel"; ChiselValue = 10; }
+                    else if (qualityId == "MapDivinationCardQuality") { ChiselName = "Divination Chisel"; ChiselValue = 50; }
+                    else if (qualityId == "MapScarabQuality") { ChiselName = "Scarab Chisel"; ChiselValue = 50; }
+                    else if (qualityId == "MapCurrencyQuality") { ChiselName = "Currency Chisel"; ChiselValue = 50; }
+                }
                 ModCount = modsComponent?.ItemMods.Count() ?? 0;
                 if (modsComponent != null && ModCount > 0)
                 {
@@ -193,7 +207,6 @@ namespace MapNotify
                                 ModCount--;
                                 continue;
                             }
-
                             #region Elder Guardian Maven Areas and Regions
                             if (mod.Group.Contains("MapElderContainsBoss"))
                             {
