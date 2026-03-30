@@ -1,4 +1,4 @@
-﻿using ExileCore;
+using ExileCore;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
