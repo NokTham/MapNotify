@@ -363,10 +363,6 @@ namespace MapNotify
                     "Display for Zana Missions",
                     Settings.ShowForZanaMaps
                 );
-                Settings.ShowLineForZanaMaps.Value = Checkbox(
-                    "Display Horizontal Line in Zana Missions Info",
-                    Settings.ShowLineForZanaMaps
-                );
                 Settings.ShowForWatchstones.Value = Checkbox(
                     "Display for Watchstones",
                     Settings.ShowForWatchstones
@@ -449,6 +445,7 @@ namespace MapNotify
                     "Warn Below Quantity Percentage",
                     Settings.ColorQuantityPercent
                 );
+                Settings.ShowChisel.Value = Checkbox("Show Chisel %", Settings.ShowChisel.Value);
                 Settings.ColorQuantity.Value = IntSlider("##ColorQuantity", Settings.ColorQuantity);
                 ImGui.SameLine();
                 HelpMarker(
