@@ -49,7 +49,6 @@ namespace MapNotify
         public ToggleNode AlwaysShowCompletionBorder { get; set; } = new(true);
         public ToggleNode StyleTextForBorder { get; set; } = new(false);
         public ToggleNode ShowForZanaMaps { get; set; } = new(true);
-        public ToggleNode ShowLineForZanaMaps { get; set; } = new(true);
         public ToggleNode TargetRegions { get; set; } = new(true);
         public ToggleNode ShowForWatchstones { get; set; } = new(true);
         public ToggleNode ShowForHeist { get; set; } = new(true);
@@ -63,6 +62,7 @@ namespace MapNotify
         public ToggleNode ShowOriginatorScarabs { get; set; } = new(true);
         public ToggleNode ShowOriginatorCurrency { get; set; } = new(true);
         public ToggleNode ShowOriginatorMaps { get; set; } = new(true);
+        public ToggleNode ShowChisel { get; set; } = new(true);
 
         public ListNode BadModWarningsLoader { get; set; } = new();
         public Vector4 ElderGuardian { get; set; } = new(0.32f, 0.55f, 0.78f, 1f);
